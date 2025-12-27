@@ -2,7 +2,13 @@ import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
-  const user = await currentUser();
+  let user;
+  try {
+    user = await currentUser();
+  } catch (error) {
+    console.error("Clerk currentUser error:", error);
+    redirect("/sign-in");
+  }
 
   if (!user) {
     redirect("/sign-in");

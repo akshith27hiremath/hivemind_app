@@ -62,6 +62,9 @@ export async function POST(req: Request) {
               currentPeriodEnd: new Date(subscription.current_period_end * 1000),
               cancelAtPeriodEnd: subscription.cancel_at_period_end,
             });
+            console.log(`Subscription created for user ${user.id}`);
+          } else {
+            console.error(`No user found for Stripe customer ${customerId}. Subscription ${subscription.id} not linked.`);
           }
         }
         break;

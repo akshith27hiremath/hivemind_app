@@ -25,7 +25,7 @@ export const PLANS = {
   pro: {
     name: "Pro",
     description: "Advanced portfolio management",
-    price: 9,
+    price: 5,
     priceId: process.env.STRIPE_PRICE_ID_PRO,
     features: [
       "Unlimited portfolios",

@@ -27,7 +27,7 @@ const plans = [
   {
     name: "Pro",
     description: "For serious investors",
-    price: 9,
+    price: 5,
     features: [
       "Unlimited portfolios",
       "Zerodha CSV import",

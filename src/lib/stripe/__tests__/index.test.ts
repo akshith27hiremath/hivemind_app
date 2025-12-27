@@ -73,7 +73,7 @@ describe("Stripe Utilities", () => {
     it("should have pro plan with correct properties", () => {
       expect(PLANS.pro).toBeDefined();
       expect(PLANS.pro.name).toBe("Pro");
-      expect(PLANS.pro.price).toBe(9);
+      expect(PLANS.pro.price).toBe(5);
       expect(PLANS.pro.features).toBeInstanceOf(Array);
       expect(PLANS.pro.features.length).toBeGreaterThan(0);
     });
