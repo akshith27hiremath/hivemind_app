@@ -10,3 +10,4 @@ export { SectorNewsPanel } from "./sector-news-panel";
 export { StockNewsPanel } from "./stock-news-panel";
 export { StockScreener } from "./stock-screener";
 export { ImpactAnalysisPanel } from "./impact-analysis-panel";
+export { PortfolioManagerPanel } from "./portfolio-manager-panel";
