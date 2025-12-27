@@ -253,25 +253,68 @@ This document tracks the development progress of HiveMind, a portfolio tracking 
 
 ---
 
-## Upcoming Phases
+## Phase 7: Portfolio Management ✅
+**Completed: December 27, 2025**
+**Commit: `f85992c`**
 
-### Phase 7: Portfolio Management (Next)
-- Create/edit/delete portfolios
-- Holdings list view
-- Add/remove holdings
-- Portfolio summary cards
+### Deliverables
+- [x] Portfolio CRUD API endpoints
+- [x] Holdings CRUD API endpoints
+- [x] Database query functions
+- [x] S&P 500 stock validation (10 sample stocks)
+- [x] Subscription limit enforcement (free = 1 portfolio)
+- [x] Portfolio list page UI
+- [x] Portfolio detail page with holdings table
+- [x] Dashboard with quick action cards
+- [x] 75 new tests (156 total)
 
-### Phase 8: CSV Import
-- Zerodha CSV format parser
-- Transaction import wizard
-- Duplicate detection
-- Import history
+### API Endpoints
+| Route | Methods | Description |
+|-------|---------|-------------|
+| `/api/portfolios` | GET, POST | List/create portfolios |
+| `/api/portfolios/[id]` | GET, PATCH, DELETE | Single portfolio ops |
+| `/api/portfolios/[id]/holdings` | GET, POST | List/add holdings |
+| `/api/portfolios/[id]/holdings/[holdingId]` | PATCH, DELETE | Update/remove holding |
 
-### Phase 9: Analytics Dashboard
-- Portfolio performance charts
-- Gain/loss calculations
-- Holdings allocation pie chart
-- Transaction history timeline
+### S&P 500 Sample Stocks
+AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, JPM, V, JNJ
+
+### Security Features
+- Auth check on all endpoints
+- Ownership verification (404 for other users' data)
+- Input validation (types, lengths, required fields)
+- Subscription limit enforcement
+
+### Test Coverage
+| Test Suite | Tests | Description |
+|------------|-------|-------------|
+| portfolios.test.ts (queries) | 27 | Portfolio & holding queries |
+| portfolios.test.ts (API) | 25 | Portfolio API routes |
+| holdings.test.ts (API) | 23 | Holdings API routes |
+
+### Files Created
+```
+├── src/lib/db/queries/
+│   └── portfolios.ts              # Query functions
+├── src/app/api/portfolios/
+│   ├── route.ts                   # List/create
+│   ├── [id]/route.ts              # Single portfolio
+│   ├── [id]/holdings/route.ts     # Holdings list/create
+│   └── [id]/holdings/[holdingId]/route.ts  # Single holding
+├── src/app/(protected)/dashboard/
+│   ├── page.tsx                   # Updated dashboard
+│   └── portfolios/
+│       ├── page.tsx               # Portfolio list
+│       └── [id]/page.tsx          # Portfolio detail
+├── src/components/portfolios/
+│   ├── portfolio-card.tsx
+│   ├── create-portfolio-form.tsx
+│   ├── add-holding-form.tsx
+│   └── holdings-table.tsx
+└── src/app/api/portfolios/__tests__/
+    ├── portfolios.test.ts
+    └── holdings.test.ts
+```
 
 ---
 
@@ -298,13 +341,14 @@ This document tracks the development progress of HiveMind, a portfolio tracking 
 - [x] Stripe portal API (5 tests)
 - [x] Subscription status API (5 tests)
 
-**Total: 81 unit/integration tests + 15 E2E tests**
+**Total: 156 unit/integration tests + 15 E2E tests**
 
 ---
 
 ## Commit History
 
 ```
+f85992c feat(phase-7): add portfolio management API and UI
 f7f2f88 test: add Playwright E2E and API integration tests
 e1b1108 fix(stripe): complete subscription flow and add dev tooling
 2c94054 feat(phase-6): add landing page with marketing content

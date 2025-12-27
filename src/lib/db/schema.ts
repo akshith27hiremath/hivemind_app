@@ -200,6 +200,31 @@ export const importLogsRelations = relations(importLogs, ({ one }) => ({
 }));
 
 // ============================================
+// Stock Prices Table (Historical Data)
+// ============================================
+
+export const stockPrices = pgTable(
+  "stock_prices",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    symbol: varchar("symbol", { length: 20 }).notNull(),
+    date: timestamp("date", { mode: "date" }).notNull(),
+    open: decimal("open", { precision: 18, scale: 4 }).notNull(),
+    high: decimal("high", { precision: 18, scale: 4 }).notNull(),
+    low: decimal("low", { precision: 18, scale: 4 }).notNull(),
+    close: decimal("close", { precision: 18, scale: 4 }).notNull(),
+    volume: decimal("volume", { precision: 20, scale: 0 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    uniquePrice: unique("unique_stock_price").on(table.symbol, table.date),
+    symbolIdx: index("stock_prices_symbol_idx").on(table.symbol),
+    dateIdx: index("stock_prices_date_idx").on(table.date),
+    symbolDateIdx: index("stock_prices_symbol_date_idx").on(table.symbol, table.date),
+  })
+);
+
+// ============================================
 // Type Exports
 // ============================================
 
@@ -220,6 +245,9 @@ export type NewTransaction = typeof transactions.$inferInsert;
 
 export type ImportLog = typeof importLogs.$inferSelect;
 export type NewImportLog = typeof importLogs.$inferInsert;
+
+export type StockPrice = typeof stockPrices.$inferSelect;
+export type NewStockPrice = typeof stockPrices.$inferInsert;
 
 // Subscription status enum
 export const SubscriptionStatus = {

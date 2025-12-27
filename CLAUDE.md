@@ -19,18 +19,28 @@ HiveMind is a SaaS application for tracking and managing investment portfolios. 
 src/
 ├── app/                    # Next.js App Router
 │   ├── (auth)/            # Auth route group (sign-in, sign-up)
-│   ├── (protected)/       # Protected routes (dashboard, settings, pricing)
+│   ├── (protected)/       # Protected routes
+│   │   ├── dashboard/     # Dashboard + portfolios
+│   │   ├── settings/      # User settings
+│   │   └── pricing/       # Subscription plans
 │   ├── api/               # API routes
 │   │   ├── health/        # Health check endpoint
+│   │   ├── portfolios/    # Portfolio & holdings CRUD
+│   │   ├── stocks/        # Stock data & sync APIs
 │   │   ├── stripe/        # Stripe checkout & portal
 │   │   └── webhooks/      # Clerk & Stripe webhooks
 │   └── layout.tsx         # Root layout with ClerkProvider
-├── components/ui/         # shadcn/ui components
+├── components/
+│   ├── ui/               # shadcn/ui components
+│   ├── landing/          # Landing page components
+│   ├── portfolios/       # Portfolio UI components
+│   └── stocks/           # Stock chart components
 ├── lib/
 │   ├── db/               # Database (Drizzle)
 │   │   ├── index.ts      # DB connection
 │   │   ├── schema.ts     # Table definitions
 │   │   └── queries/      # Query functions
+│   ├── stocks.ts         # Yahoo Finance + stock DB operations
 │   ├── stripe/           # Stripe utilities
 │   └── utils.ts          # Utility functions (cn)
 ├── config/               # App configuration
@@ -38,13 +48,75 @@ src/
 └── middleware.ts        # Clerk auth middleware
 ```
 
+## Session Startup Checklist
+
+**This project uses a Docker-first development approach.** All services (Next.js app, PostgreSQL) run inside Docker containers. Never run `npm run dev` directly on the host.
+
+### 1. Start Docker Services
+```bash
+# Start all services (app on :3000, postgres on :5433)
+docker compose -f docker-compose.dev.yml up -d
+
+# Verify services are running
+docker compose -f docker-compose.dev.yml ps
+```
+
+### 2. Start Webhook Listeners (separate terminals)
+
+**Clerk Webhooks** (user sync):
+```bash
+# Using ngrok or Clerk CLI for local development
+# Webhook endpoint: /api/webhooks/clerk
+# Events: user.created, user.updated, user.deleted
+```
+
+**Stripe Webhooks** (subscription events):
+```bash
+stripe listen --forward-to localhost:3000/api/webhooks/stripe
+# Copy the webhook signing secret to STRIPE_WEBHOOK_SECRET in .env.local
+# Events: checkout.session.completed, customer.subscription.*
+```
+
+### 3. Verify Database
+```bash
+# Check postgres is healthy
+docker compose -f docker-compose.dev.yml logs db
+
+# Push schema if needed
+docker compose -f docker-compose.dev.yml exec app npm run db:push -- --force
+```
+
+### Services Architecture
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Docker Compose                        │
+├─────────────────────────┬───────────────────────────────┤
+│  app (Next.js)          │  db (PostgreSQL 16)           │
+│  - Port 3000            │  - Port 5433 (external)       │
+│  - Hot reload enabled   │  - Port 5432 (internal)       │
+│  - WATCHPACK_POLLING    │  - Volume: postgres_data      │
+└─────────────────────────┴───────────────────────────────┘
+         │                           │
+         ▼                           │
+┌─────────────────────┐              │
+│  External Services  │              │
+├─────────────────────┤              │
+│  Clerk (auth)       │◄─────────────┘
+│  Stripe (payments)  │   Webhooks sync to DB
+│  Yahoo Finance API  │
+└─────────────────────┘
+```
+
+---
+
 ## Development Setup
 
 ### Prerequisites
-- Docker Desktop
-- Node.js 20+
+- Docker Desktop (required)
+- Node.js 20+ (for local tooling only)
 - Clerk account (auth)
 - Stripe account (payments)
+- Stripe CLI (for webhook testing)
 
 ### Environment Variables
 Required in `.env.local`:
@@ -94,7 +166,7 @@ npm run db:studio
 ### Testing
 ```bash
 # Unit & Integration Tests (Vitest)
-npm test                    # Run all tests (81 tests)
+npm test                    # Run all tests (156 tests)
 npm run test:watch          # Watch mode
 npm run test:coverage       # Coverage report
 
@@ -153,6 +225,11 @@ For E2E auth tests, a test user is configured:
 6. **import_logs** - CSV import tracking
    - `id`, `portfolioId`, `source`, `status`, `totalRecords`, `processedRecords`
 
+7. **stock_prices** - Historical stock price data (12 years, ~30K rows)
+   - `id`, `symbol`, `date`, `open`, `high`, `low`, `close`, `volume`
+   - Unique constraint on (symbol, date)
+   - Synced from Yahoo Finance via `/api/stocks/sync`
+
 ## Key Features
 
 ### Authentication (Clerk)
@@ -169,15 +246,30 @@ For E2E auth tests, a test user is configured:
 - Idempotent customer creation (no duplicate Stripe customers)
 
 ### Protected Routes
-- Dashboard: User welcome page
+- Dashboard: User welcome page + stocks link
 - Settings: Profile info + subscription management
 - Pricing: Plan comparison + upgrade button
+- Stocks: Browse 10 S&P 500 stocks with interactive charts
+
+### Stock Data (Yahoo Finance)
+- **10 S&P 500 Stocks**: AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, JPM, V, JNJ
+- **12 Years History**: ~3,000 data points per stock stored in database
+- **TradingView Charts**: Area, candlestick, line charts with time ranges (1M-MAX)
+- **Daily Sync**: `/api/stocks/sync` fetches incremental updates
+- **Live Quotes**: Real-time price from Yahoo Finance API
 
 ## API Routes
 
 | Route | Method | Description |
 |-------|--------|-------------|
 | `/api/health` | GET | Health check |
+| `/api/portfolios` | GET, POST | List/create portfolios |
+| `/api/portfolios/[id]` | GET, PATCH, DELETE | Single portfolio operations |
+| `/api/portfolios/[id]/holdings` | GET, POST | List/add holdings |
+| `/api/portfolios/[id]/holdings/[holdingId]` | PATCH, DELETE | Update/remove holding |
+| `/api/stocks` | GET | List all 10 stocks with live quotes |
+| `/api/stocks/[symbol]` | GET | Stock detail with historical data from DB |
+| `/api/stocks/sync` | GET, POST | GET: sync status, POST: trigger sync |
 | `/api/stripe/checkout` | POST | Create checkout session |
 | `/api/stripe/portal` | POST | Create customer portal session |
 | `/api/subscription/status` | GET | Get user subscription status |
@@ -192,13 +284,10 @@ For E2E auth tests, a test user is configured:
 - [x] **Phase 2**: Database schema (Drizzle ORM, PostgreSQL, 6 tables)
 - [x] **Phase 3**: Clerk authentication (middleware, webhooks, protected routes)
 - [x] **Phase 4**: Stripe subscriptions (checkout, portal, webhooks, pricing page)
-- [x] **Phase 5**: Testing infrastructure (Vitest 81 tests, Playwright E2E)
+- [x] **Phase 5**: Testing infrastructure (Vitest 156 tests, Playwright E2E)
 - [x] **Phase 6**: Landing page & marketing UI (hero, features, pricing, footer)
-
-### Upcoming Phases
-- [ ] **Phase 7**: Portfolio management (CRUD, holdings)
-- [ ] **Phase 8**: CSV import (Zerodha format)
-- [ ] **Phase 9**: Analytics dashboard
+- [x] **Phase 7**: Portfolio management (CRUD API, holdings, S&P 500 validation, UI)
+- [x] **Stock Data**: Yahoo Finance integration, 12-year history, TradingView charts
 
 ## Code Conventions
 
@@ -283,4 +372,12 @@ test(scope): description
 ```
 
 ### Current Branch
-`feature/phase-2-database-schema` (includes phases 1-4)
+`feature/phase-2-database-schema` (includes phases 1-7 + stock data)
+
+## Knowledge Core
+
+Accumulated learnings and patterns are stored in `knowledge-core.md`:
+- API version patterns (Yahoo Finance v3, lightweight-charts v5)
+- Database patterns (Drizzle upserts, incremental sync)
+- UI patterns (TradingView-style controls)
+- Troubleshooting archive (Docker, Clerk)

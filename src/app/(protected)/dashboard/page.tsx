@@ -85,6 +85,33 @@ export default async function DashboardPage() {
           </div>
         </Link>
 
+        {/* Stocks Card */}
+        <Link
+          href="/dashboard/stocks"
+          className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:shadow-md hover:border-purple-200"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="relative">
+            <div className="mb-4 inline-flex rounded-lg bg-purple-100 p-3">
+              <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900 group-hover:text-purple-700 transition-colors">
+              Stocks
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Browse S&P 500 stocks with real-time charts and data
+            </p>
+            <div className="mt-4 flex items-center text-sm font-medium text-purple-600">
+              Browse stocks
+              <svg className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </Link>
+
         {/* Settings Card */}
         <Link
           href="/settings"
