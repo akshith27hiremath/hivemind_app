@@ -17,6 +17,9 @@ export default function ProtectedLayout({
             <Link href="/dashboard" className="text-sm font-medium text-gray-700 hover:text-gray-900">
               Dashboard
             </Link>
+            <Link href="/dashboard/portfolios" className="text-sm font-medium text-gray-700 hover:text-gray-900">
+              Portfolios
+            </Link>
             <Link href="/pricing" className="text-sm font-medium text-gray-700 hover:text-gray-900">
               Pricing
             </Link>

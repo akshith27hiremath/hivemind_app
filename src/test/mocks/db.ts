@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import type { User, Subscription, Portfolio } from "@/lib/db/schema";
+import type { User, Subscription, Portfolio, Holding } from "@/lib/db/schema";
 
 // Mock user data
 export const mockUser: User = {
@@ -47,6 +47,48 @@ export const mockPortfolio: Portfolio = {
   updatedAt: new Date("2024-01-01"),
 };
 
+export const mockPortfolio2: Portfolio = {
+  id: "portfolio-uuid-456",
+  userId: "user-uuid-123",
+  name: "Second Portfolio",
+  description: null,
+  source: "manual",
+  sourceAccountId: null,
+  isActive: true,
+  lastSyncedAt: null,
+  createdAt: new Date("2024-01-02"),
+  updatedAt: new Date("2024-01-02"),
+};
+
+// Mock holding data
+export const mockHolding: Holding = {
+  id: "holding-uuid-123",
+  portfolioId: "portfolio-uuid-123",
+  symbol: "AAPL",
+  exchange: "NASDAQ",
+  instrumentType: "equity",
+  quantity: "100.000000",
+  averagePrice: "150.0000",
+  currentPrice: "175.0000",
+  currency: "USD",
+  createdAt: new Date("2024-01-01"),
+  updatedAt: new Date("2024-01-01"),
+};
+
+export const mockHolding2: Holding = {
+  id: "holding-uuid-456",
+  portfolioId: "portfolio-uuid-123",
+  symbol: "MSFT",
+  exchange: "NASDAQ",
+  instrumentType: "equity",
+  quantity: "50.000000",
+  averagePrice: "380.0000",
+  currentPrice: "420.0000",
+  currency: "USD",
+  createdAt: new Date("2024-01-02"),
+  updatedAt: new Date("2024-01-02"),
+};
+
 // Database mock factory
 export function createDbMock() {
   return {
@@ -60,6 +102,10 @@ export function createDbMock() {
         findMany: vi.fn(),
       },
       portfolios: {
+        findFirst: vi.fn(),
+        findMany: vi.fn(),
+      },
+      holdings: {
         findFirst: vi.fn(),
         findMany: vi.fn(),
       },
