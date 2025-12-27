@@ -275,9 +275,38 @@ This document tracks the development progress of HiveMind, a portfolio tracking 
 
 ---
 
+## Additional Work: Stripe Fixes & E2E Tests ✅
+**Completed: December 27, 2025**
+**Commits: `e1b1108`, `f7f2f88`**
+
+### Stripe Fixes
+- [x] Fixed Pro plan price ($9 → $5)
+- [x] Added `/api/subscription/status` endpoint
+- [x] Added `/api/dev/sync-user` for local dev (bypasses Clerk webhooks)
+- [x] Updated pricing page to show actual subscription status
+- [x] Added error handling for Clerk cold-start issues
+- [x] Idempotent Stripe customer creation
+
+### E2E Testing (Playwright)
+- [x] Landing page tests (8 tests)
+- [x] Auth flow tests (5 tests) - protected route redirects
+- [x] Stripe checkout tests with manual testing guide
+- [x] Test user configured: `boytest@test.com`
+
+### Integration Tests
+- [x] Stripe checkout API (7 tests including idempotency)
+- [x] Stripe portal API (5 tests)
+- [x] Subscription status API (5 tests)
+
+**Total: 81 unit/integration tests + 15 E2E tests**
+
+---
+
 ## Commit History
 
 ```
+f7f2f88 test: add Playwright E2E and API integration tests
+e1b1108 fix(stripe): complete subscription flow and add dev tooling
 2c94054 feat(phase-6): add landing page with marketing content
 7a69546 chore(docker): add entrypoint for automatic dependency sync
 a298c9f test: add comprehensive testing infrastructure and documentation
