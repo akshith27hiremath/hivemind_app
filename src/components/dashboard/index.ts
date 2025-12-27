@@ -8,3 +8,4 @@ export { PortfolioOverview } from "./portfolio-overview";
 export { CriticalNews } from "./critical-news";
 export { SectorNewsPanel } from "./sector-news-panel";
 export { StockNewsPanel } from "./stock-news-panel";
+export { StockScreener } from "./stock-screener";

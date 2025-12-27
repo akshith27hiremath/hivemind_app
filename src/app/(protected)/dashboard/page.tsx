@@ -9,6 +9,7 @@ import {
   CriticalNews,
   SectorNewsPanel,
   StockNewsPanel,
+  StockScreener,
 } from "@/components/dashboard";
 
 // Summary Panel - Today's Intelligence Summary
@@ -48,7 +49,7 @@ export default function DashboardPage() {
       {activePanel === "portfolio" && <PlaceholderPanel title="Portfolio Manager" />}
       {activePanel === "sector" && <SectorNewsPanel />}
       {activePanel === "stock" && <StockNewsPanel />}
-      {activePanel === "comparison" && <PlaceholderPanel title="Stock Screener" />}
+      {activePanel === "comparison" && <StockScreener />}
       {activePanel === "impact" && <PlaceholderPanel title="Impact Analysis" />}
     </>
   );
