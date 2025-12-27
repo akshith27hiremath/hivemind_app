@@ -5,3 +5,6 @@ export { DashboardProvider, useDashboard, type PanelType } from "./dashboard-con
 export { TodaysSummary } from "./todays-summary";
 export { PortfolioImpactSummary } from "./portfolio-impact-summary";
 export { PortfolioOverview } from "./portfolio-overview";
+export { CriticalNews } from "./critical-news";
+export { SectorNewsPanel } from "./sector-news-panel";
+export { StockNewsPanel } from "./stock-news-panel";

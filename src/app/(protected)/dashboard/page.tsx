@@ -6,6 +6,9 @@ import {
   PortfolioImpactSummary,
   PortfolioOverview,
   TodaysSummary,
+  CriticalNews,
+  SectorNewsPanel,
+  StockNewsPanel,
 } from "@/components/dashboard";
 
 // Summary Panel - Today's Intelligence Summary
@@ -14,6 +17,7 @@ function SummaryPanel() {
     <div className="space-y-6">
       <PortfolioImpactSummary />
       <PortfolioOverview />
+      <CriticalNews />
       <TodaysSummary />
     </div>
   );
@@ -42,8 +46,8 @@ export default function DashboardPage() {
     <>
       {activePanel === "summary" && <SummaryPanel />}
       {activePanel === "portfolio" && <PlaceholderPanel title="Portfolio Manager" />}
-      {activePanel === "sector" && <PlaceholderPanel title="Sector News" />}
-      {activePanel === "stock" && <PlaceholderPanel title="Stock News" />}
+      {activePanel === "sector" && <SectorNewsPanel />}
+      {activePanel === "stock" && <StockNewsPanel />}
       {activePanel === "comparison" && <PlaceholderPanel title="Stock Screener" />}
       {activePanel === "impact" && <PlaceholderPanel title="Impact Analysis" />}
     </>
