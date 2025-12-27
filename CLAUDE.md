@@ -93,10 +93,44 @@ npm run db:studio
 
 ### Testing
 ```bash
-npm test              # Run all tests
-npm run test:watch    # Watch mode
-npm run test:coverage # Coverage report
+# Unit & Integration Tests (Vitest)
+npm test                    # Run all tests (81 tests)
+npm run test:watch          # Watch mode
+npm run test:coverage       # Coverage report
+
+# E2E Tests (Playwright)
+npm run test:e2e            # Run E2E tests
+npm run test:e2e:headed     # Run with browser visible
+npm run test:e2e:ui         # Playwright UI mode
+npm run test:e2e:report     # View last report
+
+# Run specific test files
+npm test src/app/api        # API integration tests
+npm run test:e2e e2e/landing.spec.ts  # Landing page E2E
 ```
+
+### Test Structure
+```
+src/
+├── **/__tests__/           # Unit & integration tests
+│   ├── button.test.tsx     # Component tests
+│   ├── users.test.ts       # DB query tests
+│   └── stripe-checkout.test.ts  # API route tests
+e2e/
+├── landing.spec.ts         # Landing page E2E
+├── auth.spec.ts            # Auth flow E2E
+└── stripe-checkout.spec.ts # Payment flow E2E
+```
+
+### Test User (Clerk)
+For E2E auth tests, a test user is configured:
+- Email: boytest@test.com
+- Set `TEST_AUTH_TESTS=1` to enable auth E2E tests
+
+### Stripe Testing
+- Use test card: `4242 4242 4242 4242`
+- Start Stripe CLI: `stripe listen --forward-to localhost:3000/api/webhooks/stripe`
+- See `e2e/stripe-checkout.spec.ts` for full manual testing guide
 
 ## Database Schema
 
@@ -128,10 +162,11 @@ npm run test:coverage # Coverage report
 
 ### Subscriptions (Stripe)
 - **Free Plan**: 1 portfolio, manual entry, basic analytics
-- **Pro Plan ($9/mo)**: Unlimited portfolios, CSV import, advanced analytics
+- **Pro Plan ($5/mo)**: Unlimited portfolios, CSV import, advanced analytics
 - Checkout session API creates Stripe checkout
 - Customer portal for subscription management
 - Webhook handles subscription lifecycle events
+- Idempotent customer creation (no duplicate Stripe customers)
 
 ### Protected Routes
 - Dashboard: User welcome page
@@ -145,6 +180,8 @@ npm run test:coverage # Coverage report
 | `/api/health` | GET | Health check |
 | `/api/stripe/checkout` | POST | Create checkout session |
 | `/api/stripe/portal` | POST | Create customer portal session |
+| `/api/subscription/status` | GET | Get user subscription status |
+| `/api/dev/sync-user` | POST | DEV ONLY: Sync Clerk user to DB |
 | `/api/webhooks/clerk` | POST | Clerk user sync webhook |
 | `/api/webhooks/stripe` | POST | Stripe subscription webhook |
 
@@ -155,12 +192,13 @@ npm run test:coverage # Coverage report
 - [x] **Phase 2**: Database schema (Drizzle ORM, PostgreSQL, 6 tables)
 - [x] **Phase 3**: Clerk authentication (middleware, webhooks, protected routes)
 - [x] **Phase 4**: Stripe subscriptions (checkout, portal, webhooks, pricing page)
+- [x] **Phase 5**: Testing infrastructure (Vitest 81 tests, Playwright E2E)
+- [x] **Phase 6**: Landing page & marketing UI (hero, features, pricing, footer)
 
 ### Upcoming Phases
-- [ ] **Phase 5**: Landing page & marketing UI
-- [ ] **Phase 6**: Portfolio management (CRUD, holdings)
-- [ ] **Phase 7**: CSV import (Zerodha format)
-- [ ] **Phase 8**: Analytics dashboard
+- [ ] **Phase 7**: Portfolio management (CRUD, holdings)
+- [ ] **Phase 8**: CSV import (Zerodha format)
+- [ ] **Phase 9**: Analytics dashboard
 
 ## Code Conventions
 
