@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
+import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
+import { ChevronLeft, Plus, Trash2, TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
 
 interface Holding {
   id: string;
@@ -25,16 +27,16 @@ interface Portfolio {
 }
 
 const AVAILABLE_STOCKS = [
-  { symbol: "AAPL", name: "Apple Inc.", color: "bg-gray-900" },
-  { symbol: "MSFT", name: "Microsoft", color: "bg-blue-600" },
-  { symbol: "GOOGL", name: "Alphabet", color: "bg-red-500" },
-  { symbol: "AMZN", name: "Amazon", color: "bg-orange-500" },
-  { symbol: "NVDA", name: "NVIDIA", color: "bg-green-600" },
-  { symbol: "META", name: "Meta", color: "bg-blue-500" },
-  { symbol: "TSLA", name: "Tesla", color: "bg-red-600" },
-  { symbol: "JPM", name: "JPMorgan", color: "bg-blue-800" },
-  { symbol: "V", name: "Visa", color: "bg-indigo-600" },
-  { symbol: "JNJ", name: "Johnson & Johnson", color: "bg-red-700" },
+  { symbol: "AAPL", name: "Apple Inc.", color: "from-gray-600 to-gray-800" },
+  { symbol: "MSFT", name: "Microsoft", color: "from-blue-500 to-blue-700" },
+  { symbol: "GOOGL", name: "Alphabet", color: "from-red-500 to-red-700" },
+  { symbol: "AMZN", name: "Amazon", color: "from-orange-500 to-orange-700" },
+  { symbol: "NVDA", name: "NVIDIA", color: "from-green-500 to-green-700" },
+  { symbol: "META", name: "Meta", color: "from-blue-400 to-blue-600" },
+  { symbol: "TSLA", name: "Tesla", color: "from-red-500 to-red-700" },
+  { symbol: "JPM", name: "JPMorgan", color: "from-blue-700 to-blue-900" },
+  { symbol: "V", name: "Visa", color: "from-indigo-500 to-indigo-700" },
+  { symbol: "JNJ", name: "Johnson & Johnson", color: "from-red-600 to-red-800" },
 ];
 
 export default function PortfolioDetailPage() {
@@ -158,8 +160,8 @@ export default function PortfolioDetailPage() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-emerald-600" />
-          <span className="text-sm text-gray-500">Loading portfolio...</span>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-emerald-500" />
+          <span className="text-sm text-gray-400">Loading portfolio...</span>
         </div>
       </div>
     );
@@ -174,81 +176,97 @@ export default function PortfolioDetailPage() {
   return (
     <div className="min-h-[80vh]">
       {/* Breadcrumb */}
-      <nav className="mb-6">
-        <ol className="flex items-center gap-2 text-sm">
-          <li>
-            <Link href="/dashboard/portfolios" className="text-gray-500 hover:text-gray-700 transition-colors">
-              Portfolios
-            </Link>
-          </li>
-          <li className="text-gray-300">/</li>
-          <li className="font-medium text-gray-900">{portfolio.name}</li>
-        </ol>
-      </nav>
+      <motion.nav
+        className="mb-6"
+        initial={{ y: -10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Link
+          href="/dashboard/portfolios"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Back to Portfolios
+        </Link>
+      </motion.nav>
 
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+      <motion.div
+        className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-3xl font-bold tracking-tight text-white">
             {portfolio.name}
           </h1>
           {portfolio.description && (
-            <p className="mt-2 text-gray-500 max-w-xl">{portfolio.description}</p>
+            <p className="mt-2 text-gray-400 max-w-xl">{portfolio.description}</p>
           )}
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <span className="text-sm text-gray-500">Total Value</span>
-          <span className="text-3xl font-bold tracking-tight text-gray-900 tabular-nums">
+        <div className="flex flex-col items-end gap-1 p-4 rounded-xl bg-white/5 border border-white/10">
+          <span className="text-sm text-gray-400">Total Value</span>
+          <span className="text-3xl font-bold tracking-tight text-white tabular-nums">
             {formatCurrency(totalValue.toString())}
           </span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Add Holding Button / Form */}
       {!showAddForm ? (
-        <div className="mb-6">
+        <motion.div
+          className="mb-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
           <Button
             onClick={() => setShowAddForm(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20"
+            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0"
           >
-            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+            <Plus className="mr-2 h-4 w-4" />
             Add Holding
           </Button>
-        </div>
+        </motion.div>
       ) : (
-        <div className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="border-b border-gray-100 bg-gray-50/50 px-6 py-4">
-            <h2 className="font-semibold text-gray-900">Add New Holding</h2>
+        <motion.div
+          className="mb-6 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 overflow-hidden"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="border-b border-white/10 bg-white/5 px-6 py-4">
+            <h2 className="font-semibold text-white">Add New Holding</h2>
           </div>
           <form onSubmit={handleAddHolding} className="p-6">
             {error && (
-              <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 border border-red-100">
+              <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
                 {error}
               </div>
             )}
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">
                   Stock
                 </label>
                 <select
                   value={symbol}
                   onChange={(e) => setSymbol(e.target.value)}
                   required
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 >
-                  <option value="">Select stock...</option>
+                  <option value="" className="bg-gray-900">Select stock...</option>
                   {AVAILABLE_STOCKS.map((stock) => (
-                    <option key={stock.symbol} value={stock.symbol}>
+                    <option key={stock.symbol} value={stock.symbol} className="bg-gray-900">
                       {stock.symbol} — {stock.name}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">
                   Quantity
                 </label>
                 <input
@@ -259,11 +277,11 @@ export default function PortfolioDetailPage() {
                   onChange={(e) => setQuantity(e.target.value)}
                   placeholder="100"
                   required
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all tabular-nums"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-gray-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all tabular-nums"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">
                   Average Price ($)
                 </label>
                 <input
@@ -274,7 +292,7 @@ export default function PortfolioDetailPage() {
                   onChange={(e) => setAveragePrice(e.target.value)}
                   placeholder="150.00"
                   required
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all tabular-nums"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-gray-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all tabular-nums"
                 />
               </div>
             </div>
@@ -282,7 +300,7 @@ export default function PortfolioDetailPage() {
               <Button
                 type="submit"
                 disabled={isAdding || !symbol || !quantity || !averagePrice}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0"
               >
                 {isAdding ? "Adding..." : "Add Holding"}
               </Button>
@@ -293,113 +311,129 @@ export default function PortfolioDetailPage() {
                   setShowAddForm(false);
                   setError(null);
                 }}
+                className="bg-white/5 border-white/20 text-white hover:bg-white/10"
               >
                 Cancel
               </Button>
             </div>
           </form>
-        </div>
+        </motion.div>
       )}
 
       {/* Holdings Table */}
       {portfolio.holdings.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50 py-16 px-4">
-          <div className="rounded-full bg-gray-100 p-4 mb-4">
-            <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
+        <motion.div
+          className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/10 bg-white/5 py-16 px-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="rounded-full bg-white/10 p-4 mb-4">
+            <BarChart3 className="h-8 w-8 text-gray-400" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">No holdings yet</h3>
-          <p className="text-gray-500 text-center mb-6 max-w-sm">
+          <h3 className="text-lg font-semibold text-white mb-1">No holdings yet</h3>
+          <p className="text-gray-400 text-center mb-6 max-w-sm">
             Add your first stock to start tracking your portfolio performance
           </p>
-        </div>
+        </motion.div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <motion.div
+          className="rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 overflow-hidden"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/80">
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                <tr className="border-b border-white/10 bg-white/5">
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
                     Stock
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
                     Shares
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
                     Avg Cost
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
                     Current
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
                     Market Value
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
                     Gain/Loss
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
-
+                  <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {portfolio.holdings.map((holding) => {
+              <tbody className="divide-y divide-white/5">
+                {portfolio.holdings.map((holding, index) => {
                   const stockInfo = getStockInfo(holding.symbol);
                   const value = parseFloat(holding.quantity) * parseFloat(holding.currentPrice || holding.averagePrice);
                   const gainLoss = calculateGainLoss(holding);
+                  const isPositive = gainLoss !== null && gainLoss >= 0;
 
                   return (
-                    <tr key={holding.id} className="group hover:bg-gray-50/50 transition-colors">
+                    <motion.tr
+                      key={holding.id}
+                      className="group hover:bg-white/5 transition-colors"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className={`h-10 w-10 rounded-lg ${stockInfo?.color || "bg-gray-600"} flex items-center justify-center text-white font-bold text-xs shadow-sm`}>
+                          <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${stockInfo?.color || "from-gray-600 to-gray-800"} flex items-center justify-center text-white font-bold text-xs shadow-lg`}>
                             {holding.symbol.slice(0, 2)}
                           </div>
                           <div>
-                            <div className="font-semibold text-gray-900">{holding.symbol}</div>
+                            <div className="font-semibold text-white">{holding.symbol}</div>
                             <div className="text-sm text-gray-500">{stockInfo?.name || holding.exchange}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right tabular-nums text-gray-900">
+                      <td className="px-6 py-4 text-right tabular-nums text-white">
                         {formatNumber(holding.quantity)}
                       </td>
-                      <td className="px-6 py-4 text-right tabular-nums text-gray-900">
+                      <td className="px-6 py-4 text-right tabular-nums text-gray-300">
                         {formatCurrency(holding.averagePrice)}
                       </td>
-                      <td className="px-6 py-4 text-right tabular-nums text-gray-900">
+                      <td className="px-6 py-4 text-right tabular-nums text-white">
                         {formatCurrency(holding.currentPrice)}
                       </td>
-                      <td className="px-6 py-4 text-right tabular-nums font-semibold text-gray-900">
+                      <td className="px-6 py-4 text-right tabular-nums font-semibold text-white">
                         {formatCurrency(value.toString())}
                       </td>
                       <td className="px-6 py-4 text-right tabular-nums">
                         {gainLoss !== null ? (
-                          <span className={`font-semibold ${gainLoss >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                            {gainLoss >= 0 ? "+" : ""}
+                          <span className={`inline-flex items-center gap-1.5 font-semibold ${isPositive ? "text-emerald-400" : "text-red-400"}`}>
+                            {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                            {isPositive ? "+" : ""}
                             {formatCurrency(gainLoss.toString())}
                           </span>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-gray-500">—</span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button
                           onClick={() => handleDeleteHolding(holding.id)}
                           disabled={deletingId === holding.id}
-                          className="opacity-0 group-hover:opacity-100 rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-all disabled:opacity-50"
+                          className="opacity-0 group-hover:opacity-100 rounded-lg p-2 text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-50"
                         >
-                          {deletingId === holding.id ? "..." : "Remove"}
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
-                    </tr>
+                    </motion.tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );

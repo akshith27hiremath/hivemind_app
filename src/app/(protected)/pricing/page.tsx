@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check } from "lucide-react";
+import { Check, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion } from "motion/react";
 
 const plans = [
   {
@@ -137,78 +137,108 @@ export default function PricingPage() {
   };
 
   return (
-    <div>
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold">Pricing</h1>
-        <p className="mt-2 text-gray-600">
+    <div className="max-w-5xl mx-auto">
+      <motion.div
+        className="mb-12 text-center"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h1 className="text-4xl font-bold text-white mb-3">Pricing</h1>
+        <p className="text-gray-400 text-lg">
           Choose the plan that works best for you
         </p>
-      </div>
+      </motion.div>
 
-      <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
-        {plans.map((plan) => (
-          <Card
+      <div className="grid gap-8 md:grid-cols-2">
+        {plans.map((plan, index) => (
+          <motion.div
             key={plan.name}
-            className={`relative ${plan.popular ? "border-blue-500 shadow-lg" : ""} ${
-              isCurrentPlan(plan.id) ? "ring-2 ring-green-500" : ""
+            className={`relative rounded-2xl backdrop-blur-xl bg-white/5 border p-8 ${
+              plan.popular
+                ? "border-blue-500/50 shadow-lg shadow-blue-500/10"
+                : "border-white/10"
+            } ${
+              isCurrentPlan(plan.id) ? "ring-2 ring-green-500/50" : ""
             }`}
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5, delay: index * 0.1 }}
           >
             {plan.popular && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-1.5 text-xs font-semibold text-white">
+                  <Sparkles className="w-3 h-3" />
                   Most Popular
                 </span>
               </div>
             )}
             {isCurrentPlan(plan.id) && (
               <div className="absolute -top-3 right-4">
-                <span className="rounded-full bg-green-500 px-3 py-1 text-xs font-semibold text-white">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/20 border border-green-500/30 px-3 py-1 text-xs font-semibold text-green-400">
+                  <Zap className="w-3 h-3" />
                   Active
                 </span>
               </div>
             )}
-            <CardHeader>
-              <CardTitle>{plan.name}</CardTitle>
-              <CardDescription>{plan.description}</CardDescription>
-              <div className="mt-4">
-                <span className="text-4xl font-bold">
-                  {plan.price === 0 ? "Free" : `$${plan.price}`}
-                </span>
-                {plan.price > 0 && (
-                  <span className="text-gray-500">/month</span>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Button
-                className="w-full"
-                variant={plan.popular && !isCurrentPlan(plan.id) ? "default" : "outline"}
-                disabled={isCurrentPlan(plan.id) || loading || checkingStatus}
-                onClick={getButtonAction(plan.id)}
-              >
-                {loading ? "Loading..." : getButtonText(plan.id)}
-              </Button>
-            </CardFooter>
-          </Card>
+
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">{plan.name}</h2>
+              <p className="text-gray-400">{plan.description}</p>
+            </div>
+
+            <div className="mb-8">
+              <span className="text-5xl font-bold text-white">
+                {plan.price === 0 ? "Free" : `$${plan.price}`}
+              </span>
+              {plan.price > 0 && (
+                <span className="text-gray-500 ml-2">/month</span>
+              )}
+            </div>
+
+            <ul className="space-y-4 mb-8">
+              {plan.features.map((feature) => (
+                <li key={feature} className="flex items-center gap-3">
+                  <div className={`rounded-full p-1 ${plan.popular ? "bg-blue-500/20" : "bg-white/10"}`}>
+                    <Check className={`h-4 w-4 ${plan.popular ? "text-blue-400" : "text-green-400"}`} />
+                  </div>
+                  <span className="text-gray-300">{feature}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Button
+              className={`w-full ${
+                plan.popular && !isCurrentPlan(plan.id)
+                  ? "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
+                  : "bg-white/5 border-white/20 text-white hover:bg-white/10"
+              }`}
+              variant={plan.popular && !isCurrentPlan(plan.id) ? "default" : "outline"}
+              disabled={isCurrentPlan(plan.id) || loading || checkingStatus}
+              onClick={getButtonAction(plan.id)}
+            >
+              {loading ? "Loading..." : getButtonText(plan.id)}
+            </Button>
+          </motion.div>
         ))}
       </div>
 
       {subscription?.hasSubscription && (
-        <div className="mt-8 text-center">
-          <Button variant="link" onClick={handleManageSubscription} disabled={loading}>
+        <motion.div
+          className="mt-10 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <Button
+            variant="link"
+            onClick={handleManageSubscription}
+            disabled={loading}
+            className="text-gray-400 hover:text-white"
+          >
             Manage Billing & Subscription
           </Button>
-        </div>
+        </motion.div>
       )}
     </div>
   );
