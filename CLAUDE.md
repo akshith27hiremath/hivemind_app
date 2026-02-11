@@ -11,6 +11,9 @@ HiveMind is a SaaS application for tracking and managing investment portfolios. 
 - **Authentication**: Clerk
 - **Payments**: Stripe (subscriptions)
 - **Styling**: Tailwind CSS + shadcn/ui
+- **Charts**: lightweight-charts v5.1 (TradingView) + Recharts v3.6
+- **Animation**: Framer Motion (motion/react)
+- **Icons**: Lucide React
 - **Testing**: Vitest + React Testing Library
 - **Containerization**: Docker + Docker Compose
 
@@ -33,6 +36,7 @@ src/
 ├── components/
 │   ├── ui/               # shadcn/ui components
 │   ├── landing/          # Landing page components
+│   ├── dashboard/        # Dashboard panels (news, screener, impact)
 │   ├── portfolios/       # Portfolio UI components
 │   └── stocks/           # Stock chart components
 ├── lib/
@@ -279,15 +283,25 @@ For E2E auth tests, a test user is configured:
 
 ## Implementation Progress
 
-### Completed Phases
+### Completed Phases (Core)
 - [x] **Phase 1**: Project initialization (Next.js, TypeScript, Tailwind, shadcn/ui)
-- [x] **Phase 2**: Database schema (Drizzle ORM, PostgreSQL, 6 tables)
+- [x] **Phase 2**: Database schema (Drizzle ORM, PostgreSQL, 7 tables)
 - [x] **Phase 3**: Clerk authentication (middleware, webhooks, protected routes)
 - [x] **Phase 4**: Stripe subscriptions (checkout, portal, webhooks, pricing page)
 - [x] **Phase 5**: Testing infrastructure (Vitest 156 tests, Playwright E2E)
 - [x] **Phase 6**: Landing page & marketing UI (hero, features, pricing, footer)
 - [x] **Phase 7**: Portfolio management (CRUD API, holdings, S&P 500 validation, UI)
 - [x] **Stock Data**: Yahoo Finance integration, 12-year history, TradingView charts
+
+### Completed Phases (Figma Dashboard - Dark Glassmorphism Theme)
+- [x] **Dashboard Phase 2**: Dashboard layout with sidebar navigation
+- [x] **Dashboard Phase 3**: Today's Summary component
+- [x] **Dashboard Phase 4**: Critical News Feed, Sector News, Stock News panels
+- [x] **Dashboard Phase 5**: Stock Screener with dual comparison charts (recharts)
+- [x] **Dashboard Phase 6**: Impact Analysis Panel with radar chart
+- [x] **Portfolio Manager**: Full CRUD synced with existing API
+- [x] **Dark Theme**: All protected pages updated to glassmorphism styling
+- [x] **News Markers**: lightweight-charts v5 createSeriesMarkers on stock charts
 
 ## Code Conventions
 
@@ -372,7 +386,7 @@ test(scope): description
 ```
 
 ### Current Branch
-`feature/phase-2-database-schema` (includes phases 1-7 + stock data)
+`feature/figma-dashboard-implementation` (includes all core phases + dashboard UI)
 
 ## Knowledge Core
 

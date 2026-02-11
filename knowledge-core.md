@@ -1,7 +1,7 @@
 # HiveMind Knowledge Core
 
 > Accumulated learnings and patterns discovered during development.
-> Last updated: 2025-12-27
+> Last updated: 2026-02-11
 
 ---
 
@@ -25,6 +25,22 @@ chart.addSeries(AreaSeries, { lineColor: "#10b981" });
 
 // WRONG - v4 style (no longer works)
 chart.addAreaSeries({ lineColor: "#10b981" });
+```
+
+### Lightweight Charts v5 News Markers
+```typescript
+// createSeriesMarkers - v5 API for chart annotations
+import { createSeriesMarkers, SeriesMarker, Time } from "lightweight-charts";
+
+const markers: SeriesMarker<Time>[] = events.map((event) => ({
+  time: event.date as Time,
+  position: "aboveBar", // or "belowBar"
+  color: "#22c55e",     // marker color
+  shape: "arrowUp",     // arrowUp, arrowDown, circle, square
+  text: "Label text",   // shown above/below marker
+  size: 2,              // 1 (small) or 2 (large)
+}));
+createSeriesMarkers(series, markers);
 ```
 
 ### Next.js 14 Dynamic Route Params
@@ -66,6 +82,15 @@ await db
 - Disable ranges with insufficient data
 - Show performance % badge for selected range
 - Color based on positive/negative change
+
+### Dark Glassmorphism Theme (Protected Pages)
+- Background: inherits from globals.css dark `:root` theme
+- Cards: `bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl`
+- Text: `text-white` (primary), `text-gray-400` (secondary), `text-gray-500` (muted)
+- Inputs: `border-white/10 bg-white/5 text-white placeholder-gray-500`
+- Positive badges: `bg-emerald-500/20 text-emerald-400 border border-emerald-500/30`
+- Negative badges: `bg-red-500/20 text-red-400 border border-red-500/30`
+- Gradient buttons: `bg-gradient-to-r from-blue-500 to-purple-500`
 
 ### Loading States
 - Use skeleton divs with `animate-pulse`
@@ -124,3 +149,9 @@ await db
 - Yahoo Finance integration for 12-year history
 - TradingView lightweight-charts for visualization
 - Daily sync via `/api/stocks/sync`
+
+### Dashboard Figma Implementation (2026-02-11)
+- Dark glassmorphism theme applied to all protected pages
+- Dashboard panels: CriticalNews, SectorNews, StockNews, StockScreener, ImpactAnalysis
+- News markers added to lightweight-charts using createSeriesMarkers v5 API
+- Mock historical news data for all 10 S&P 500 stocks in `src/lib/mock-data/news.ts`
