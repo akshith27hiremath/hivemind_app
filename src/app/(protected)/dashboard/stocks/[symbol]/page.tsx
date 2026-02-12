@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { StockChart } from "@/components/stocks/stock-chart";
-import { ChevronLeft, TrendingUp, TrendingDown, ExternalLink, AlertTriangle } from "lucide-react";
+import { StockChart, type ChartNewsEvent } from "@/components/stocks/stock-chart";
+import { ChevronLeft, TrendingUp, TrendingDown, ExternalLink, AlertTriangle, Clock } from "lucide-react";
 
 interface PriceData {
   time: string;
@@ -38,10 +38,42 @@ interface NewsItem {
   url: string;
 }
 
+interface ArticleFromAPI {
+  id: number;
+  title: string;
+  summary: string;
+  source: string;
+  url: string;
+  published_at: string | null;
+  enrichment?: {
+    signals?: Array<{
+      direction: string;
+      magnitude_category: string;
+    }>;
+  };
+}
+
 interface StockData {
   quote: StockQuote;
   historicalData: PriceData[];
   news: NewsItem[];
+  articles?: ArticleFromAPI[];
+}
+
+function mapSentiment(direction?: string): "positive" | "negative" | "neutral" {
+  if (!direction) return "neutral";
+  const d = direction.toLowerCase();
+  if (d === "positive") return "positive";
+  if (d === "negative") return "negative";
+  return "neutral";
+}
+
+function mapImpact(magnitude?: string): "high" | "medium" | "low" {
+  if (!magnitude) return "low";
+  const m = magnitude.toLowerCase();
+  if (m === "major") return "high";
+  if (m === "moderate") return "medium";
+  return "low";
 }
 
 export default function StockDetailPage() {
@@ -97,7 +129,7 @@ export default function StockDetailPage() {
   };
 
   const formatMarketCap = (cap: number | undefined) => {
-    if (!cap) return "—";
+    if (!cap) return "\u2014";
     if (cap >= 1_000_000_000_000) {
       return "$" + (cap / 1_000_000_000_000).toFixed(2) + "T";
     }
@@ -168,8 +200,24 @@ export default function StockDetailPage() {
     );
   }
 
-  const { quote, historicalData, news } = data;
+  const { quote, historicalData, news, articles } = data;
   const isPositive = quote.change >= 0;
+
+  // Map articles to chart news events for markers
+  const chartNewsEvents: ChartNewsEvent[] = (articles ?? [])
+    .filter((a): a is ArticleFromAPI & { published_at: string } => !!a.published_at)
+    .map((a) => {
+      const signal = a.enrichment?.signals?.[0];
+      const dateStr = a.published_at.split("T")[0] ?? a.published_at;
+      return {
+        id: String(a.id),
+        date: dateStr,
+        title: a.title,
+        description: a.summary,
+        sentiment: mapSentiment(signal?.direction),
+        impact: mapImpact(signal?.magnitude_category),
+      };
+    });
 
   return (
     <div className="min-h-[80vh]">
@@ -233,7 +281,7 @@ export default function StockDetailPage() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <StockChart data={historicalData} symbol={quote.symbol} />
+        <StockChart data={historicalData} symbol={quote.symbol} newsEvents={chartNewsEvents} />
       </motion.div>
 
       {/* Stats Grid */}
@@ -281,11 +329,11 @@ export default function StockDetailPage() {
         </div>
         <div className="rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 p-4">
           <p className="text-xs text-gray-500 font-medium mb-1">52W High</p>
-          <p className="text-lg font-semibold text-gray-500">—</p>
+          <p className="text-lg font-semibold text-gray-500">{"\u2014"}</p>
         </div>
         <div className="rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 p-4">
           <p className="text-xs text-gray-500 font-medium mb-1">52W Low</p>
-          <p className="text-lg font-semibold text-gray-500">—</p>
+          <p className="text-lg font-semibold text-gray-500">{"\u2014"}</p>
         </div>
       </motion.div>
 
@@ -300,29 +348,43 @@ export default function StockDetailPage() {
           <h2 className="font-semibold text-white">Latest News</h2>
         </div>
         <div className="divide-y divide-white/5">
-          {news.map((item, index) => (
-            <motion.div
-              key={index}
-              className="px-6 py-4 hover:bg-white/5 transition-colors group"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 + index * 0.05 }}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-white mb-1 line-clamp-2 group-hover:text-emerald-400 transition-colors">
-                    {item.title}
-                  </h3>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <span className="font-medium text-gray-400">{item.source}</span>
-                    <span>•</span>
-                    <span>{new Date(item.date).toLocaleDateString()}</span>
+          {news.length > 0 ? (
+            news.map((item, index) => (
+              <motion.a
+                key={index}
+                href={item.url !== "#" ? item.url : undefined}
+                target={item.url !== "#" ? "_blank" : undefined}
+                rel={item.url !== "#" ? "noopener noreferrer" : undefined}
+                className="block px-6 py-4 hover:bg-white/5 transition-colors group"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 + index * 0.05 }}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-white mb-1 line-clamp-2 group-hover:text-emerald-400 transition-colors">
+                      {item.title}
+                    </h3>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <span className="font-medium text-gray-400">{item.source}</span>
+                      <span>-</span>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(item.date).toLocaleDateString()}
+                      </div>
+                    </div>
                   </div>
+                  {item.url !== "#" && (
+                    <ExternalLink className="w-5 h-5 text-gray-600 group-hover:text-gray-400 shrink-0 transition-colors" />
+                  )}
                 </div>
-                <ExternalLink className="w-5 h-5 text-gray-600 group-hover:text-gray-400 shrink-0 transition-colors" />
-              </div>
-            </motion.div>
-          ))}
+              </motion.a>
+            ))
+          ) : (
+            <div className="px-6 py-8 text-center text-gray-400">
+              <p>No news available for {symbol}</p>
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -334,7 +396,7 @@ export default function StockDetailPage() {
         transition={{ delay: 0.6 }}
       >
         Data provided by Yahoo Finance. Prices may be delayed up to 15 minutes.
-        News headlines are for demonstration purposes.
+        {news.length > 0 && " News powered by Intelligence API."}
       </motion.div>
     </div>
   );

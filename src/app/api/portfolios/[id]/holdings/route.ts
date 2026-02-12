@@ -116,7 +116,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!isValidSymbol(normalizedSymbol)) {
       return NextResponse.json(
         {
-          error: `Invalid symbol. Only S&P 500 stocks are supported. Valid symbols: ${VALID_SYMBOLS.join(", ")}`,
+          error: `Invalid symbol. Only supported tickers are allowed. Valid symbols: ${VALID_SYMBOLS.join(", ")}`,
           code: "INVALID_SYMBOL",
         },
         { status: 400 }

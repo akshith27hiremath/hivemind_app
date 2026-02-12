@@ -37,11 +37,16 @@ services:
       - STRIPE_PRICE_ID_PRO=${STRIPE_PRICE_ID_PRO}
       # App
       - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      # Intelligence API
+      - INTELLIGENCE_API_URL=${INTELLIGENCE_API_URL:-http://intelligence-api:8001}
+      - INTELLIGENCE_API_KEY=${INTELLIGENCE_API_KEY:-hm-dev-key-change-in-prod}
+      - NEXT_PUBLIC_INTELLIGENCE_ENABLED=${NEXT_PUBLIC_INTELLIGENCE_ENABLED:-false}
     depends_on:
       db:
         condition: service_healthy
     networks:
       - hivemind-network
+      - intelligence-network
 
   db:
     image: postgres:16-alpine
@@ -66,6 +71,9 @@ services:
 networks:
   hivemind-network:
     driver: bridge
+  intelligence-network:
+    external: true
+    name: intelligence-network
 
 volumes:
   postgres_data:

@@ -101,6 +101,10 @@ const config: Config = {
           from: { opacity: "0", transform: "translateX(20px)" },
           to: { opacity: "1", transform: "translateX(0)" },
         },
+        "pulse-bg": {
+          "0%, 100%": { transform: "scale(1)", opacity: "0.2" },
+          "50%": { transform: "scale(1.2)", opacity: "0.3" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",

@@ -2,200 +2,266 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import {
-  ResponsiveContainer,
-  ComposedChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ReferenceDot,
-  Area,
-} from "recharts";
-import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Plus, X, TrendingUp, TrendingDown } from "lucide-react";
-import { stockNewsData, sectorWideNews, type ChartNewsItem } from "@/lib/mock-data/news";
+  createChart,
+  ColorType,
+  LineSeries,
+  type IChartApi,
+  type Time,
+  createSeriesMarkers,
+  type SeriesMarker,
+  type ISeriesApi,
+} from "lightweight-charts";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
+import { ChevronDown, Plus, X, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
+import { useIntelligenceData } from "./intelligence-data-provider";
+import { mapSentiment, toRelativeTime } from "@/lib/intelligence/mappers";
+import type { Article, Sentiment } from "@/lib/intelligence/types";
 
-type Timeframe = "15m" | "30m" | "1h" | "1D" | "1W" | "1M";
+// ============================================
+// Types
+// ============================================
+
+interface PriceData {
+  time: string; // "YYYY-MM-DD"
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+type Timeframe = "1M" | "3M" | "6M" | "1Y" | "5Y" | "MAX";
+
+const TIME_RANGE_DAYS: Record<Timeframe, number | null> = {
+  "1M": 30,
+  "3M": 90,
+  "6M": 180,
+  "1Y": 365,
+  "5Y": 1825,
+  "MAX": null,
+};
 
 const timeframeLabels: Record<Timeframe, string> = {
-  "15m": "15 Minutes",
-  "30m": "30 Minutes",
-  "1h": "1 Hour",
-  "1D": "1 Day",
-  "1W": "1 Week",
   "1M": "1 Month",
+  "3M": "3 Months",
+  "6M": "6 Months",
+  "1Y": "1 Year",
+  "5Y": "5 Years",
+  "MAX": "Max",
 };
 
-const availableStocks = [
-  { symbol: "NVDA", name: "NVIDIA Corporation", color: "rgba(255, 255, 255, 0.8)" },
-  { symbol: "TSLA", name: "Tesla Inc.", color: "rgba(200, 180, 100, 0.85)" },
-  { symbol: "AAPL", name: "Apple Inc.", color: "rgba(160, 200, 160, 0.8)" },
-  { symbol: "MSFT", name: "Microsoft Corporation", color: "rgba(160, 160, 200, 0.8)" },
+interface ChartNewsItem {
+  id: string;
+  time: string; // "YYYY-MM-DD" or ""
+  title: string;
+  description: string;
+  sentiment: Sentiment;
+  impact: "high" | "medium" | "low";
+  stock?: string;
+}
+
+// ============================================
+// Stock list — all 27 supported tickers
+// ============================================
+
+const STOCK_COLORS = [
+  "rgba(255, 255, 255, 0.9)",   // white
+  "rgba(234, 179, 8, 0.9)",     // gold
+  "rgba(59, 130, 246, 0.85)",   // blue
+  "rgba(168, 85, 247, 0.85)",   // purple
+  "rgba(236, 72, 153, 0.85)",   // pink
+  "rgba(34, 197, 94, 0.85)",    // green
+  "rgba(249, 115, 22, 0.85)",   // orange
+  "rgba(20, 184, 166, 0.85)",   // teal
+  "rgba(239, 68, 68, 0.85)",    // red
+  "rgba(99, 102, 241, 0.85)",   // indigo
 ];
 
-// Generate price data for different stocks and timeframes
-const generateStockData = (symbol: string, timeframe: Timeframe) => {
-  const baseData: Record<string, Record<string, { time: string; price: number }[]>> = {
-    NVDA: {
-      "1D": [
-        { time: "09:30", price: 485.2 },
-        { time: "10:00", price: 486.5 },
-        { time: "10:30", price: 484.8 },
-        { time: "11:00", price: 488.3 },
-        { time: "11:30", price: 490.1 },
-        { time: "12:00", price: 489.5 },
-        { time: "12:30", price: 491.2 },
-        { time: "13:00", price: 493.8 },
-        { time: "13:30", price: 496.5 },
-        { time: "14:00", price: 495.2 },
-        { time: "14:30", price: 497.8 },
-        { time: "15:00", price: 498.9 },
-        { time: "15:30", price: 496.7 },
-        { time: "16:00", price: 494.3 },
-      ],
-    },
-    TSLA: {
-      "1D": [
-        { time: "09:30", price: 238.5 },
-        { time: "10:00", price: 239.2 },
-        { time: "10:30", price: 238.8 },
-        { time: "11:00", price: 242.5 },
-        { time: "11:30", price: 243.1 },
-        { time: "12:00", price: 242.8 },
-        { time: "12:30", price: 243.5 },
-        { time: "13:00", price: 244.2 },
-        { time: "13:30", price: 244.8 },
-        { time: "14:00", price: 245.2 },
-        { time: "14:30", price: 246.1 },
-        { time: "15:00", price: 246.8 },
-        { time: "15:30", price: 244.5 },
-        { time: "16:00", price: 243.2 },
-      ],
-    },
-    AAPL: {
-      "1D": [
-        { time: "09:30", price: 195.2 },
-        { time: "10:00", price: 195.8 },
-        { time: "10:30", price: 195.5 },
-        { time: "11:00", price: 196.3 },
-        { time: "11:30", price: 196.9 },
-        { time: "12:00", price: 196.5 },
-        { time: "12:30", price: 197.1 },
-        { time: "13:00", price: 197.6 },
-        { time: "13:30", price: 198.2 },
-        { time: "14:00", price: 197.9 },
-        { time: "14:30", price: 198.5 },
-        { time: "15:00", price: 198.9 },
-        { time: "15:30", price: 197.8 },
-        { time: "16:00", price: 197.2 },
-      ],
-    },
-    MSFT: {
-      "1D": [
-        { time: "09:30", price: 372.5 },
-        { time: "10:00", price: 373.2 },
-        { time: "10:30", price: 372.8 },
-        { time: "11:00", price: 374.1 },
-        { time: "11:30", price: 375.3 },
-        { time: "12:00", price: 374.9 },
-        { time: "12:30", price: 375.8 },
-        { time: "13:00", price: 376.5 },
-        { time: "13:30", price: 377.2 },
-        { time: "14:00", price: 376.8 },
-        { time: "14:30", price: 377.9 },
-        { time: "15:00", price: 378.3 },
-        { time: "15:30", price: 376.5 },
-        { time: "16:00", price: 375.8 },
-      ],
-    },
+const availableStocks = [
+  // Portfolio Holdings (10)
+  { symbol: "AAPL", name: "Apple Inc." },
+  { symbol: "MSFT", name: "Microsoft Corporation" },
+  { symbol: "NVDA", name: "NVIDIA Corporation" },
+  { symbol: "GOOGL", name: "Alphabet Inc." },
+  { symbol: "AMZN", name: "Amazon.com Inc." },
+  { symbol: "META", name: "Meta Platforms Inc." },
+  { symbol: "TSM", name: "Taiwan Semiconductor" },
+  { symbol: "JPM", name: "JPMorgan Chase & Co." },
+  { symbol: "JNJ", name: "Johnson & Johnson" },
+  { symbol: "XOM", name: "Exxon Mobil Corporation" },
+  // Supply Chain Neighbors (10)
+  { symbol: "ASML", name: "ASML Holding" },
+  { symbol: "LRCX", name: "Lam Research" },
+  { symbol: "AMAT", name: "Applied Materials" },
+  { symbol: "MU", name: "Micron Technology" },
+  { symbol: "QCOM", name: "Qualcomm Inc." },
+  { symbol: "AVGO", name: "Broadcom Inc." },
+  { symbol: "TXN", name: "Texas Instruments" },
+  { symbol: "INTC", name: "Intel Corporation" },
+  { symbol: "AMD", name: "Advanced Micro Devices" },
+  { symbol: "CRM", name: "Salesforce Inc." },
+  // Competitors / 2nd-Hop (7)
+  { symbol: "GS", name: "Goldman Sachs Group" },
+  { symbol: "V", name: "Visa Inc." },
+  { symbol: "MA", name: "Mastercard Inc." },
+  { symbol: "TSLA", name: "Tesla Inc." },
+  { symbol: "NFLX", name: "Netflix Inc." },
+  { symbol: "DIS", name: "Walt Disney Co." },
+  { symbol: "BA", name: "Boeing Co." },
+];
+
+function getStockColor(symbol: string): string {
+  const idx = availableStocks.findIndex((s) => s.symbol === symbol);
+  return STOCK_COLORS[idx % STOCK_COLORS.length] ?? STOCK_COLORS[0]!;
+}
+
+// ============================================
+// Helpers
+// ============================================
+
+function mapArticleToChartNews(article: Article): ChartNewsItem {
+  const signal = article.enrichment?.signals?.[0];
+  const publishedDate = article.published_at
+    ? article.published_at.split("T")[0] ?? ""
+    : "";
+  return {
+    id: `article-${article.id}`,
+    time: publishedDate,
+    title: article.title,
+    description: article.summary?.slice(0, 120) || "",
+    sentiment: signal ? mapSentiment(signal.direction) : "neutral",
+    impact:
+      signal?.magnitude_category === "major"
+        ? "high"
+        : signal?.magnitude_category === "moderate"
+          ? "medium"
+          : "low",
+    stock: article.tickers[0],
   };
+}
 
-  return baseData[symbol]?.[timeframe] || baseData[symbol]?.["1D"] || [];
-};
-
-// Normalize data to percentage change from start
-const normalizeData = (stocks: string[], timeframe: Timeframe) => {
-  if (stocks.length === 0) return [];
-
-  const stock1Data = generateStockData(stocks[0], timeframe);
-  const stock2Data = stocks[1] ? generateStockData(stocks[1], timeframe) : [];
-
-  const stock1Start = stock1Data[0]?.price || 1;
-  const stock2Start = stock2Data[0]?.price || 1;
-
-  return stock1Data.map((item, index) => {
-    const result: Record<string, string | number> = {
-      time: item.time,
-      [stocks[0]]: ((item.price - stock1Start) / stock1Start) * 100,
-    };
-
-    if (stocks[1] && stock2Data[index]) {
-      result[stocks[1]] =
-        ((stock2Data[index].price - stock2Start) / stock2Start) * 100;
+/** Snap a date string to the nearest trading day <= that date in a sorted array */
+function findNearestTradingDay(dateStr: string, sortedDates: string[]): string | null {
+  if (sortedDates.length === 0) return null;
+  // Binary-search for the last date <= dateStr
+  let lo = 0;
+  let hi = sortedDates.length - 1;
+  let best: string | null = null;
+  while (lo <= hi) {
+    const mid = (lo + hi) >>> 1;
+    const d = sortedDates[mid]!;
+    if (d <= dateStr) {
+      best = d;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
     }
-
-    return result;
-  });
-};
-
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: Array<{
-    dataKey: string;
-    value: number;
-    payload: Record<string, string | number>;
-  }>;
-  selectedNews: ChartNewsItem[];
-}
-
-function CustomTooltip({ active, payload, selectedNews }: CustomTooltipProps) {
-  if (active && payload && payload.length) {
-    const dataPoint = payload[0].payload;
-    const newsAtPoint = selectedNews.find((n) => n.time === dataPoint.time);
-
-    return (
-      <div className="p-4 rounded-xl backdrop-blur-xl bg-black/90 border border-white/20">
-        <p className="text-sm text-gray-400 mb-2">{dataPoint.time}</p>
-        {payload.map((entry, index) => (
-          <div
-            key={index}
-            className="flex items-center justify-between gap-4 mb-1"
-          >
-            <span className="text-xs text-gray-300">{entry.dataKey}:</span>
-            <span
-              className={`text-sm ${entry.value >= 0 ? "text-hm-candle-green" : "text-hm-candle-red"}`}
-            >
-              {entry.value >= 0 ? "+" : ""}
-              {entry.value.toFixed(2)}%
-            </span>
-          </div>
-        ))}
-        {newsAtPoint && (
-          <div className="mt-2 pt-2 border-t border-white/10">
-            <p className="text-xs text-white/80 mb-1">{newsAtPoint.title}</p>
-            <p className="text-xs text-gray-400">{newsAtPoint.description}</p>
-          </div>
-        )}
-      </div>
-    );
   }
-  return null;
+  return best;
 }
+
+function filterByTimeRange(data: PriceData[], timeframe: Timeframe): PriceData[] {
+  const days = TIME_RANGE_DAYS[timeframe];
+  if (days === null || data.length <= days) return data;
+  return data.slice(-days);
+}
+
+function normalizeToPercent(
+  data: PriceData[]
+): { time: string; value: number }[] {
+  if (data.length === 0) return [];
+  const firstClose = data[0]!.close;
+  if (firstClose === 0) return [];
+  return data.map((d) => ({
+    time: d.time,
+    value: ((d.close - firstClose) / firstClose) * 100,
+  }));
+}
+
+// ============================================
+// Main component
+// ============================================
 
 export function StockScreener() {
-  const [timeframe, setTimeframe] = useState<Timeframe>("1D");
-  const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
-  const [selectedStocks, setSelectedStocks] = useState<string[]>(["NVDA", "TSLA"]);
-  const [isStockDropdownOpen, setIsStockDropdownOpen] = useState<number | null>(null);
-  const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
+  const { dashboard } = useIntelligenceData();
 
+  // Stock & timeframe selection
+  const [selectedStocks, setSelectedStocks] = useState<string[]>(["NVDA", "TSLA"]);
+  const [timeframe, setTimeframe] = useState<Timeframe>("1Y");
+  const [isStockDropdownOpen, setIsStockDropdownOpen] = useState<number | null>(null);
+  const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
+
+  // Chart data
+  const [stockData, setStockData] = useState<Record<string, PriceData[]>>({});
+  const [loadingChart, setLoadingChart] = useState(false);
+
+  // News
+  const [stockArticles, setStockArticles] = useState<Article[]>([]);
+  const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
+  const [newsRange, setNewsRange] = useState<"1D" | "1W" | "1M" | "3M" | "ALL">("1W");
+
+  // Refs
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
   const timeframeRef = useRef<HTMLDivElement>(null);
   const stockRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
 
-  const data = normalizeData(selectedStocks, timeframe);
+  // ---- Fetch historical data for both stocks ----
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchBoth() {
+      setLoadingChart(true);
+      const results: Record<string, PriceData[]> = {};
+      for (const symbol of selectedStocks.filter(Boolean)) {
+        try {
+          const res = await fetch(`/api/stocks/${symbol}`);
+          if (res.ok) {
+            const json = await res.json();
+            results[symbol] = json.historicalData ?? [];
+          }
+        } catch {
+          // Non-critical — chart will show whatever we got
+        }
+      }
+      if (!cancelled) {
+        setStockData(results);
+        setLoadingChart(false);
+      }
+    }
+    fetchBoth();
+    return () => { cancelled = true; };
+  }, [selectedStocks]);
 
-  // Close dropdowns on outside click
+  // ---- Fetch articles for selected stocks ----
+  const fetchStockArticles = useCallback(async () => {
+    const tickers = selectedStocks.filter(Boolean);
+    if (tickers.length === 0) return;
+    const results: Article[] = [];
+    for (const ticker of tickers) {
+      try {
+        const res = await fetch(`/api/intelligence/articles?ticker=${ticker}&limit=30`);
+        if (res.ok) {
+          const data = await res.json();
+          results.push(...(data.data ?? []));
+        }
+      } catch {
+        // Non-critical
+      }
+    }
+    setStockArticles(results);
+  }, [selectedStocks]);
+
+  useEffect(() => {
+    fetchStockArticles();
+  }, [fetchStockArticles]);
+
+  // ---- Close dropdowns on outside click ----
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -212,16 +278,242 @@ export function StockScreener() {
         }
       });
     }
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isStockDropdownOpen]);
 
+  // ---- Build news items ----
+  const digestNews = dashboard?.data?.digest?.sections?.direct_news ?? [];
+
+  const uniqueNews = useMemo(() => {
+    const allChartNews: ChartNewsItem[] = [
+      ...stockArticles.map(mapArticleToChartNews),
+      ...digestNews
+        .filter((d) =>
+          d.affected_holdings.some((h) => selectedStocks.includes(h))
+        )
+        .map((d) => ({
+          id: `digest-${d.article_id}`,
+          time: d.published_at ? (d.published_at.split("T")[0] ?? "") : "",
+          title: d.headline,
+          description: d.summary?.slice(0, 120) || "",
+          sentiment: mapSentiment(d.sentiment ?? "NEUTRAL"),
+          impact: (
+            d.magnitude === "major"
+              ? "high"
+              : d.magnitude === "moderate"
+                ? "medium"
+                : "low"
+          ) as "high" | "medium" | "low",
+          stock: d.affected_holdings[0],
+        })),
+    ];
+
+    const seenTitles = new Set<string>();
+    return allChartNews.filter((n) => {
+      if (seenTitles.has(n.title)) return false;
+      seenTitles.add(n.title);
+      return true;
+    });
+  }, [stockArticles, digestNews, selectedStocks]);
+
+  const NEWS_RANGE_DAYS: Record<typeof newsRange, number | null> = {
+    "1D": 1, "1W": 7, "1M": 30, "3M": 90, "ALL": null,
+  };
+
+  const filteredNews = useMemo(() => {
+    const days = NEWS_RANGE_DAYS[newsRange];
+    if (days === null) return uniqueNews;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    const cutoffStr = cutoff.toISOString().split("T")[0]!;
+    return uniqueNews.filter((n) => n.time >= cutoffStr);
+  }, [uniqueNews, newsRange]);
+
+  const selectedNews = useMemo(
+    () => filteredNews.filter((news) => selectedNewsIds.includes(news.id)),
+    [filteredNews, selectedNewsIds]
+  );
+
+  // ---- Create lightweight-charts ----
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    const stock1 = selectedStocks[0];
+    const stock2 = selectedStocks[1];
+    const data1 = stock1 ? filterByTimeRange(stockData[stock1] ?? [], timeframe) : [];
+    const data2 = stock2 ? filterByTimeRange(stockData[stock2] ?? [], timeframe) : [];
+
+    // If still loading or no data yet, don't create chart
+    if (data1.length === 0 && data2.length === 0) return;
+
+    const norm1 = normalizeToPercent(data1);
+    const norm2 = normalizeToPercent(data2);
+
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: "#0f172a" },
+        textColor: "#94a3b8",
+      },
+      grid: {
+        vertLines: { color: "#1e293b" },
+        horzLines: { color: "#1e293b" },
+      },
+      width: chartContainerRef.current.clientWidth,
+      height: 380,
+      timeScale: {
+        borderColor: "#334155",
+        timeVisible: false,
+        fixLeftEdge: true,
+        fixRightEdge: true,
+      },
+      rightPriceScale: {
+        borderColor: "#334155",
+        scaleMargins: { top: 0.15, bottom: 0.1 },
+      },
+      crosshair: {
+        mode: 1,
+        vertLine: {
+          color: "#475569",
+          width: 1,
+          style: 2,
+          labelBackgroundColor: "#334155",
+        },
+        horzLine: {
+          color: "#475569",
+          width: 1,
+          style: 2,
+          labelBackgroundColor: "#334155",
+        },
+      },
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: false,
+      },
+      handleScale: {
+        mouseWheel: true,
+        pinch: true,
+        axisPressedMouseMove: true,
+      },
+    });
+
+    chartRef.current = chart;
+
+    // Add series 1
+    let series1: ISeriesApi<"Line"> | null = null;
+    if (stock1 && norm1.length > 0) {
+      series1 = chart.addSeries(LineSeries, {
+        color: getStockColor(stock1),
+        lineWidth: 2,
+        priceFormat: {
+          type: "custom",
+          formatter: (v: number) => v.toFixed(2) + "%",
+        },
+      });
+      series1.setData(
+        norm1.map((d) => ({ time: d.time as Time, value: d.value }))
+      );
+    }
+
+    // Add series 2
+    let series2: ISeriesApi<"Line"> | null = null;
+    if (stock2 && norm2.length > 0) {
+      series2 = chart.addSeries(LineSeries, {
+        color: getStockColor(stock2),
+        lineWidth: 2,
+        priceFormat: {
+          type: "custom",
+          formatter: (v: number) => v.toFixed(2) + "%",
+        },
+      });
+      series2.setData(
+        norm2.map((d) => ({ time: d.time as Time, value: d.value }))
+      );
+    }
+
+    // News markers — snap each news date to nearest trading day
+    if (selectedNews.length > 0) {
+      const dates1 = norm1.map((d) => d.time);
+      const dates2 = norm2.map((d) => d.time);
+
+      const markers1: SeriesMarker<Time>[] = [];
+      const markers2: SeriesMarker<Time>[] = [];
+
+      for (const news of selectedNews) {
+        if (!news.time) continue;
+
+        const isPositiveSentiment = news.sentiment === "positive";
+        const isNegativeSentiment = news.sentiment === "negative";
+
+        // Decide which series this marker belongs to
+        const usesSeries2 = news.stock === stock2 && series2;
+        const targetDates = usesSeries2 ? dates2 : dates1;
+        const snappedDate = findNearestTradingDay(news.time, targetDates);
+        if (!snappedDate) continue;
+
+        const marker: SeriesMarker<Time> = {
+          time: snappedDate as Time,
+          position: isNegativeSentiment ? "belowBar" : "aboveBar",
+          color: isPositiveSentiment
+            ? "#22c55e"
+            : isNegativeSentiment
+              ? "#ef4444"
+              : "#eab308",
+          shape: isPositiveSentiment
+            ? "arrowUp"
+            : isNegativeSentiment
+              ? "arrowDown"
+              : "circle",
+          text:
+            news.title.length > 25
+              ? news.title.slice(0, 25) + "..."
+              : news.title,
+          size: news.impact === "high" ? 2 : 1,
+        };
+
+        if (usesSeries2) {
+          markers2.push(marker);
+        } else if (series1) {
+          markers1.push(marker);
+        }
+      }
+
+      if (series1 && markers1.length > 0) {
+        markers1.sort((a, b) => (a.time as string).localeCompare(b.time as string));
+        createSeriesMarkers(series1, markers1);
+      }
+      if (series2 && markers2.length > 0) {
+        markers2.sort((a, b) => (a.time as string).localeCompare(b.time as string));
+        createSeriesMarkers(series2, markers2);
+      }
+    }
+
+    chart.timeScale().fitContent();
+
+    // Resize handler
+    const handleResize = () => {
+      if (chartContainerRef.current) {
+        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
+      }
+    };
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      chart.remove();
+      chartRef.current = null;
+    };
+  }, [stockData, selectedStocks, timeframe, selectedNews]);
+
+  // ---- Handlers ----
   const handleStockSelect = (index: number, symbol: string) => {
     const newStocks = [...selectedStocks];
     newStocks[index] = symbol;
     setSelectedStocks(newStocks);
     setIsStockDropdownOpen(null);
+    setSelectedNewsIds([]);
   };
 
   const handleToggleNews = (id: string) => {
@@ -230,29 +522,26 @@ export function StockScreener() {
     );
   };
 
-  // Combine all relevant news
-  const allNews: ChartNewsItem[] = [
-    ...sectorWideNews,
-    ...(selectedStocks[0] && stockNewsData[selectedStocks[0]]
-      ? stockNewsData[selectedStocks[0]]
-      : []),
-    ...(selectedStocks[1] && stockNewsData[selectedStocks[1]]
-      ? stockNewsData[selectedStocks[1]]
-      : []),
-  ];
+  // ---- Performance metrics ----
+  const perfMetrics = useMemo(() => {
+    return selectedStocks.map((symbol) => {
+      const raw = stockData[symbol] ?? [];
+      const filtered = filterByTimeRange(raw, timeframe);
+      if (filtered.length < 2) return { symbol, change: 0, isPositive: true };
+      const first = filtered[0]!.close;
+      const last = filtered[filtered.length - 1]!.close;
+      const pct = first > 0 ? ((last - first) / first) * 100 : 0;
+      return { symbol, change: pct, isPositive: pct >= 0 };
+    });
+  }, [stockData, selectedStocks, timeframe]);
 
-  const selectedNews = allNews.filter((news) =>
-    selectedNewsIds.includes(news.id)
-  );
-
-  // Get stock color
-  const getStockColor = (symbol: string) => {
-    return availableStocks.find((s) => s.symbol === symbol)?.color || "rgba(255, 255, 255, 0.8)";
-  };
+  // ============================================
+  // Render
+  // ============================================
 
   return (
     <div className="space-y-6">
-      {/* Stock Comparison Chart */}
+      {/* Chart Card */}
       <motion.div
         className="p-6 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10"
         initial={{ y: 20, opacity: 0 }}
@@ -266,25 +555,50 @@ export function StockScreener() {
               Normalized percentage change comparison with news overlay
             </p>
           </div>
+
+          {/* Performance Badges */}
+          <div className="flex items-center gap-2">
+            {perfMetrics.map((m) => (
+              <div
+                key={m.symbol}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                  m.isPositive
+                    ? "bg-emerald-500/10 text-emerald-400"
+                    : "bg-red-500/10 text-red-400"
+                }`}
+              >
+                {m.symbol} {m.isPositive ? "+" : ""}
+                {m.change.toFixed(2)}%
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Stock Selectors */}
+        {/* Stock Selectors + Timeframe */}
         <div className="flex flex-wrap items-center gap-4 mb-6">
           {[0, 1].map((index) => (
-            <div key={index} className="relative flex-1 min-w-[180px]" ref={stockRefs[index]}>
-              <motion.button
+            <div
+              key={index}
+              className="relative flex-1 min-w-[180px]"
+              ref={stockRefs[index]}
+            >
+              <button
                 onClick={() =>
                   setIsStockDropdownOpen(
                     isStockDropdownOpen === index ? null : index
                   )
                 }
-                className="w-full px-4 py-3 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm flex items-center justify-between"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="w-full px-4 py-3 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 text-sm flex items-center justify-between"
               >
                 <div className="text-left">
-                  <div className="font-medium">{selectedStocks[index]}</div>
-                  <div className="text-xs text-gray-400">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: getStockColor(selectedStocks[index] ?? "") }}
+                    />
+                    <span className="font-medium">{selectedStocks[index]}</span>
+                  </div>
+                  <div className="text-xs text-gray-400 ml-[18px]">
                     {availableStocks.find(
                       (s) => s.symbol === selectedStocks[index]
                     )?.name || "Select Stock"}
@@ -293,12 +607,12 @@ export function StockScreener() {
                 <ChevronDown
                   className={`w-4 h-4 transition-transform ${isStockDropdownOpen === index ? "rotate-180" : ""}`}
                 />
-              </motion.button>
+              </button>
 
               <AnimatePresence>
                 {isStockDropdownOpen === index && (
                   <motion.div
-                    className="absolute top-full left-0 mt-2 w-full rounded-xl backdrop-blur-xl bg-black/90 border border-white/10 shadow-2xl z-20 overflow-hidden"
+                    className="absolute top-full left-0 mt-2 w-full rounded-xl backdrop-blur-xl bg-black/90 border border-white/10 shadow-2xl z-20 overflow-hidden max-h-64 overflow-y-auto"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
@@ -311,17 +625,18 @@ export function StockScreener() {
                           stock.symbol === selectedStocks[index]
                       )
                       .map((stock) => (
-                        <motion.button
+                        <button
                           key={stock.symbol}
-                          onClick={() => handleStockSelect(index, stock.symbol)}
-                          className={`w-full px-4 py-3 text-left text-sm transition-all ${selectedStocks[index] === stock.symbol ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10 hover:text-white"}`}
-                          whileHover={{ x: 4 }}
+                          onClick={() =>
+                            handleStockSelect(index, stock.symbol)
+                          }
+                          className={`w-full px-4 py-3 text-left text-sm transition-all duration-150 hover:translate-x-1 ${selectedStocks[index] === stock.symbol ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10 hover:text-white"}`}
                         >
                           <div className="font-medium">{stock.symbol}</div>
                           <div className="text-xs text-gray-400">
                             {stock.name}
                           </div>
-                        </motion.button>
+                        </button>
                       ))}
                   </motion.div>
                 )}
@@ -329,292 +644,128 @@ export function StockScreener() {
             </div>
           ))}
 
-          {/* Timeframe Dropdown */}
-          <div className="relative" ref={timeframeRef}>
-            <motion.button
-              onClick={() => setIsTimeframeDropdownOpen(!isTimeframeDropdownOpen)}
-              className="px-4 py-3 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm flex items-center gap-2 min-w-[140px] justify-between"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <span>{timeframeLabels[timeframe]}</span>
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${isTimeframeDropdownOpen ? "rotate-180" : ""}`}
-              />
-            </motion.button>
-
-            <AnimatePresence>
-              {isTimeframeDropdownOpen && (
-                <motion.div
-                  className="absolute top-full right-0 mt-2 w-40 rounded-xl backdrop-blur-xl bg-black/90 border border-white/10 shadow-2xl z-20 overflow-hidden"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {(Object.keys(timeframeLabels) as Timeframe[]).map((tf) => (
-                    <motion.button
-                      key={tf}
-                      onClick={() => {
-                        setTimeframe(tf);
-                        setIsTimeframeDropdownOpen(false);
-                      }}
-                      className={`w-full px-4 py-3 text-left text-sm transition-all ${timeframe === tf ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10 hover:text-white"}`}
-                      whileHover={{ x: 4 }}
-                    >
-                      {timeframeLabels[tf]}
-                    </motion.button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* Timeframe Selector */}
+          <div className="flex items-center rounded-xl bg-white/5 border border-white/10 p-0.5">
+            {(Object.keys(TIME_RANGE_DAYS) as Timeframe[]).map((tf) => (
+              <button
+                key={tf}
+                onClick={() => setTimeframe(tf)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  timeframe === tf
+                    ? "bg-white/10 text-white"
+                    : "text-gray-400 hover:text-white/70"
+                }`}
+              >
+                {tf}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Chart */}
-        <div className="h-80 -mx-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data}>
-              <defs>
-                <linearGradient id="stock1Gradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="5%"
-                    stopColor="rgba(255, 255, 255, 0.1)"
-                    stopOpacity={0.8}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="rgba(255, 255, 255, 0.1)"
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-                <linearGradient id="stock2Gradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="5%"
-                    stopColor="rgba(200, 180, 100, 0.15)"
-                    stopOpacity={0.6}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="rgba(200, 180, 100, 0.15)"
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-              </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="rgba(255, 255, 255, 0.05)"
-              />
-              <XAxis
-                dataKey="time"
-                stroke="rgba(255, 255, 255, 0.3)"
-                style={{ fontSize: "12px" }}
-                tick={{ fill: "rgba(255, 255, 255, 0.5)" }}
-              />
-              <YAxis
-                stroke="rgba(255, 255, 255, 0.3)"
-                style={{ fontSize: "12px" }}
-                tick={{ fill: "rgba(255, 255, 255, 0.5)" }}
-                tickFormatter={(value) => `${value}%`}
-              />
-              <Tooltip
-                content={<CustomTooltip selectedNews={selectedNews} />}
-              />
-
-              {selectedStocks[0] && (
-                <>
-                  <Area
-                    type="monotone"
-                    dataKey={selectedStocks[0]}
-                    stroke="none"
-                    fill="url(#stock1Gradient)"
-                    fillOpacity={1}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={selectedStocks[0]}
-                    stroke={getStockColor(selectedStocks[0])}
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 6, fill: "rgba(255, 255, 255, 0.9)" }}
-                  />
-                </>
-              )}
-
-              {selectedStocks[1] && (
-                <>
-                  <Area
-                    type="monotone"
-                    dataKey={selectedStocks[1]}
-                    stroke="none"
-                    fill="url(#stock2Gradient)"
-                    fillOpacity={1}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={selectedStocks[1]}
-                    stroke={getStockColor(selectedStocks[1])}
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 6, fill: "rgba(200, 180, 100, 0.95)" }}
-                  />
-                </>
-              )}
-
-              {/* News event markers */}
-              {selectedNews.map((news, i) => {
-                const dataPoint = data.find((d) => d.time === news.time);
-                if (!dataPoint) return null;
-
-                // For sector news, show on both lines
-                if (news.id.startsWith("sector-")) {
-                  return selectedStocks.map((stock, stockIndex) => {
-                    const yValue = dataPoint[stock];
-                    if (yValue === undefined) return null;
-                    return (
-                      <ReferenceDot
-                        key={`${news.id}-${stock}`}
-                        x={news.time}
-                        y={yValue as number}
-                        r={8}
-                        fill={
-                          news.sentiment === "positive"
-                            ? "rgba(34, 197, 94, 0.3)"
-                            : news.sentiment === "negative"
-                              ? "rgba(239, 68, 68, 0.3)"
-                              : "rgba(255, 255, 255, 0.3)"
-                        }
-                        stroke={
-                          news.sentiment === "positive"
-                            ? "rgba(34, 197, 94, 0.8)"
-                            : news.sentiment === "negative"
-                              ? "rgba(239, 68, 68, 0.8)"
-                              : "rgba(255, 255, 255, 0.8)"
-                        }
-                        strokeWidth={2}
-                      />
-                    );
-                  });
-                }
-
-                // Stock-specific news
-                const stockSymbol = selectedStocks.find((s) =>
-                  news.id.toLowerCase().startsWith(s.toLowerCase())
-                );
-                if (stockSymbol && dataPoint[stockSymbol] !== undefined) {
-                  return (
-                    <ReferenceDot
-                      key={news.id}
-                      x={news.time}
-                      y={dataPoint[stockSymbol] as number}
-                      r={8}
-                      fill={
-                        news.sentiment === "positive"
-                          ? "rgba(34, 197, 94, 0.3)"
-                          : news.sentiment === "negative"
-                            ? "rgba(239, 68, 68, 0.3)"
-                            : "rgba(255, 255, 255, 0.3)"
-                      }
-                      stroke={
-                        news.sentiment === "positive"
-                          ? "rgba(34, 197, 94, 0.8)"
-                          : news.sentiment === "negative"
-                            ? "rgba(239, 68, 68, 0.8)"
-                            : "rgba(255, 255, 255, 0.8)"
-                      }
-                      strokeWidth={2}
-                    />
-                  );
-                }
-
-                return null;
-              })}
-            </ComposedChart>
-          </ResponsiveContainer>
+        <div className="relative rounded-xl overflow-hidden">
+          {loadingChart && Object.keys(stockData).length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center bg-[#0f172a] z-10">
+              <Loader2 className="w-8 h-8 animate-spin text-white/50" />
+            </div>
+          )}
+          <div ref={chartContainerRef} className="w-full" />
+          {!loadingChart &&
+            Object.keys(stockData).length === 0 && (
+              <div className="flex h-[380px] items-center justify-center bg-[#0f172a] rounded-xl text-gray-400">
+                <p className="text-sm">Select stocks to compare</p>
+              </div>
+            )}
         </div>
 
         {/* Legend */}
         <div className="mt-4 flex flex-wrap items-center gap-6 text-xs text-gray-400">
-          {selectedStocks[0] && (
-            <div className="flex items-center gap-2">
+          {selectedStocks.filter(Boolean).map((symbol) => (
+            <div key={symbol} className="flex items-center gap-2">
               <div
-                className="w-3 h-0.5"
-                style={{ backgroundColor: getStockColor(selectedStocks[0]) }}
+                className="w-3 h-0.5 rounded"
+                style={{ backgroundColor: getStockColor(symbol) }}
               />
-              <span>{selectedStocks[0]}</span>
+              <span>{symbol}</span>
             </div>
+          ))}
+          <span className="text-gray-600">|</span>
+          <span>Scroll to zoom, drag to pan</span>
+          {selectedNews.length > 0 && (
+            <>
+              <span className="text-gray-600">|</span>
+              <span className="text-blue-400">
+                {selectedNews.length} news marker
+                {selectedNews.length !== 1 ? "s" : ""}
+              </span>
+            </>
           )}
-          {selectedStocks[1] && (
-            <div className="flex items-center gap-2">
-              <div
-                className="w-3 h-0.5"
-                style={{ backgroundColor: getStockColor(selectedStocks[1]) }}
-              />
-              <span>{selectedStocks[1]}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full border-2 border-hm-candle-green bg-hm-candle-green/30" />
-            <span>Positive News</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full border-2 border-hm-candle-red bg-hm-candle-red/30" />
-            <span>Negative News</span>
-          </div>
         </div>
       </motion.div>
 
-      {/* News Selector */}
+      {/* News Events Panel */}
       <motion.div
         className="p-6 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10"
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <h3 className="text-lg font-medium mb-2">News Events</h3>
-        <p className="text-sm text-gray-400 mb-6">
-          Toggle news events to display on the chart
-        </p>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-medium mb-1">News Events</h3>
+            <p className="text-sm text-gray-400">
+              Toggle news events to display as markers on the chart
+            </p>
+          </div>
+          <div className="flex items-center rounded-xl bg-white/5 border border-white/10 p-0.5">
+            {(["1D", "1W", "1M", "3M", "ALL"] as const).map((range) => (
+              <button
+                key={range}
+                onClick={() => setNewsRange(range)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  newsRange === range
+                    ? "bg-white/10 text-white"
+                    : "text-gray-400 hover:text-white/70"
+                }`}
+              >
+                {range === "1D" ? "Today" : range === "1W" ? "Week" : range === "1M" ? "Month" : range === "3M" ? "3 Mo" : "All"}
+              </button>
+            ))}
+          </div>
+        </div>
 
-        <div className="space-y-4">
-          {/* Sector News Section */}
-          {sectorWideNews.length > 0 && (
-            <div>
-              <div className="text-xs text-gray-500 mb-2 uppercase tracking-wider">
-                Sector-Wide News
-              </div>
-              <div className="space-y-2">
-                {sectorWideNews.map((news) => (
-                  <NewsEventCard
-                    key={news.id}
-                    news={news}
-                    isSelected={selectedNewsIds.includes(news.id)}
-                    onToggle={() => handleToggleNews(news.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Individual Stock News */}
+        <div className="grid grid-cols-2 gap-6">
           {selectedStocks.map((stockSymbol) => {
-            const stockNews = stockNewsData[stockSymbol] || [];
-            if (stockNews.length === 0) return null;
+            const stockNews = filteredNews.filter(
+              (n) => n.stock === stockSymbol || n.stock === undefined
+            );
 
             return (
-              <div key={stockSymbol}>
-                <div className="text-xs text-gray-500 mb-2 uppercase tracking-wider mt-4">
-                  {stockSymbol} News
+              <div key={stockSymbol} className="min-w-0">
+                <div className="flex items-center gap-2 mb-3">
+                  <div
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: getStockColor(stockSymbol) }}
+                  />
+                  <span className="text-xs text-gray-500 uppercase tracking-wider">
+                    {stockSymbol} News ({stockNews.length})
+                  </span>
                 </div>
                 <div className="space-y-2">
-                  {stockNews.map((news) => (
-                    <NewsEventCard
-                      key={news.id}
-                      news={news}
-                      isSelected={selectedNewsIds.includes(news.id)}
-                      onToggle={() => handleToggleNews(news.id)}
-                    />
-                  ))}
+                  {stockNews.length === 0 ? (
+                    <p className="text-sm text-gray-500 py-4 text-center">
+                      No news in this range
+                    </p>
+                  ) : (
+                    stockNews.map((news) => (
+                      <NewsEventCard
+                        key={news.id}
+                        news={news}
+                        isSelected={selectedNewsIds.includes(news.id)}
+                        onToggle={() => handleToggleNews(news.id)}
+                      />
+                    ))
+                  )}
                 </div>
               </div>
             );
@@ -625,7 +776,10 @@ export function StockScreener() {
   );
 }
 
-// News Event Card Component
+// ============================================
+// News Event Card
+// ============================================
+
 function NewsEventCard({
   news,
   isSelected,
@@ -636,14 +790,10 @@ function NewsEventCard({
   onToggle: () => void;
 }) {
   return (
-    <motion.div
-      className="p-4 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-      whileHover={{ scale: 1.01 }}
-    >
+    <div className="p-4 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-xs text-gray-500">{news.time}</span>
             <span
               className={`text-xs px-2 py-0.5 rounded ${
                 news.impact === "high"
@@ -675,25 +825,35 @@ function NewsEventCard({
             </span>
           </div>
           <div className="text-sm font-medium mb-1">{news.title}</div>
-          <div className="text-xs text-gray-400">{news.description}</div>
+          <div className="flex items-center gap-2 text-xs text-gray-400">
+            {news.time && (
+              <span className="text-gray-500">
+                {new Date(news.time + "T00:00:00").toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </span>
+            )}
+            {news.time && news.description && <span className="text-gray-600">-</span>}
+            <span className="line-clamp-1">{news.description}</span>
+          </div>
         </div>
-        <motion.button
+        <button
           onClick={onToggle}
-          className={`p-2 rounded-lg backdrop-blur-xl border transition-all ${
+          className={`p-2 rounded-lg backdrop-blur-xl border hover:scale-110 active:scale-90 transition-all duration-200 ${
             isSelected
               ? "bg-white/20 border-white/40"
               : "bg-white/5 border-white/10 hover:bg-white/10"
           }`}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
         >
           {isSelected ? (
             <X className="w-4 h-4" />
           ) : (
             <Plus className="w-4 h-4" />
           )}
-        </motion.button>
+        </button>
       </div>
-    </motion.div>
+    </div>
   );
 }

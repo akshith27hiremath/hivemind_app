@@ -1,3 +1,6 @@
+// @deprecated - Kept for rollback only. All dashboard components now use Intelligence API via intelligence-data-provider.
+// Safe to delete once Intelligence API integration is fully validated in production.
+
 export type NewsImpact = "high" | "medium" | "low";
 export type NewsSentiment = "positive" | "negative" | "neutral";
 export type NewsCategory = "portfolio" | "market" | "sector";

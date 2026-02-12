@@ -38,16 +38,36 @@ interface Portfolio {
 }
 
 const AVAILABLE_STOCKS = [
+  // Portfolio Holdings (10)
   { symbol: "AAPL", name: "Apple Inc." },
   { symbol: "MSFT", name: "Microsoft Corporation" },
+  { symbol: "NVDA", name: "NVIDIA Corporation" },
   { symbol: "GOOGL", name: "Alphabet Inc." },
   { symbol: "AMZN", name: "Amazon.com Inc." },
-  { symbol: "NVDA", name: "NVIDIA Corporation" },
   { symbol: "META", name: "Meta Platforms Inc." },
-  { symbol: "TSLA", name: "Tesla Inc." },
+  { symbol: "TSM", name: "Taiwan Semiconductor" },
   { symbol: "JPM", name: "JPMorgan Chase & Co." },
-  { symbol: "V", name: "Visa Inc." },
   { symbol: "JNJ", name: "Johnson & Johnson" },
+  { symbol: "XOM", name: "Exxon Mobil Corporation" },
+  // Supply Chain Neighbors (10)
+  { symbol: "ASML", name: "ASML Holding" },
+  { symbol: "LRCX", name: "Lam Research" },
+  { symbol: "AMAT", name: "Applied Materials" },
+  { symbol: "MU", name: "Micron Technology" },
+  { symbol: "QCOM", name: "Qualcomm Inc." },
+  { symbol: "AVGO", name: "Broadcom Inc." },
+  { symbol: "TXN", name: "Texas Instruments" },
+  { symbol: "INTC", name: "Intel Corporation" },
+  { symbol: "AMD", name: "Advanced Micro Devices" },
+  { symbol: "CRM", name: "Salesforce Inc." },
+  // Competitors / 2nd-Hop (7)
+  { symbol: "GS", name: "Goldman Sachs Group" },
+  { symbol: "V", name: "Visa Inc." },
+  { symbol: "MA", name: "Mastercard Inc." },
+  { symbol: "TSLA", name: "Tesla Inc." },
+  { symbol: "NFLX", name: "Netflix Inc." },
+  { symbol: "DIS", name: "Walt Disney Co." },
+  { symbol: "BA", name: "Boeing Co." },
 ];
 
 // Utility functions
@@ -109,34 +129,24 @@ function PortfolioListView({
   return (
     <div className="space-y-4">
       {/* Create New Portfolio Button */}
-      <motion.button
+      <button
         onClick={onCreateNew}
-        className="w-full p-4 rounded-2xl backdrop-blur-xl bg-white/5 border border-dashed border-white/20 hover:bg-white/10 hover:border-white/30 transition-all flex items-center justify-center gap-2 text-gray-400 hover:text-white"
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
+        className="w-full p-4 rounded-2xl backdrop-blur-xl bg-white/5 border border-dashed border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-200 flex items-center justify-center gap-2 text-gray-400 hover:text-white"
       >
         <Plus className="w-5 h-5" />
         <span>Create New Portfolio</span>
-      </motion.button>
+      </button>
 
       {portfolios.length === 0 ? (
-        <motion.div
-          className="p-8 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 text-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
+        <div className="p-8 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 text-center">
           <Briefcase className="w-12 h-12 mx-auto mb-4 text-gray-500" />
           <p className="text-gray-400">No portfolios yet. Create your first one!</p>
-        </motion.div>
+        </div>
       ) : (
-        portfolios.map((portfolio, index) => (
-          <motion.div
+        portfolios.map((portfolio) => (
+          <div
             key={portfolio.id}
-            className="p-5 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: index * 0.05 }}
-            whileHover={{ scale: 1.01 }}
+            className="p-5 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200 cursor-pointer"
             onClick={() => onSelect(portfolio)}
           >
             <div className="flex items-center justify-between">
@@ -158,26 +168,24 @@ function PortfolioListView({
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <motion.button
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(portfolio.id);
                   }}
                   disabled={deletingId === portfolio.id}
-                  className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 transition-all text-gray-400 hover:text-red-400"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 hover:scale-110 active:scale-90 transition-all duration-200 text-gray-400 hover:text-red-400"
                 >
                   {deletingId === portfolio.id ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Trash2 className="w-4 h-4" />
                   )}
-                </motion.button>
+                </button>
                 <ChevronRight className="w-5 h-5 text-gray-500" />
               </div>
             </div>
-          </motion.div>
+          </div>
         ))
       )}
     </div>
@@ -231,14 +239,12 @@ function CreatePortfolioForm({
     >
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-medium">Create New Portfolio</h3>
-        <motion.button
+        <button
           onClick={onCancel}
-          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 hover:scale-110 active:scale-90 transition-all duration-200"
         >
           <X className="w-4 h-4" />
-        </motion.button>
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -274,24 +280,20 @@ function CreatePortfolioForm({
         </div>
 
         <div className="flex gap-3 pt-2">
-          <motion.button
+          <button
             type="submit"
             disabled={isLoading || !name.trim()}
-            className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 hover:bg-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 hover:bg-white/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             {isLoading ? "Creating..." : "Create Portfolio"}
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
           >
             Cancel
-          </motion.button>
+          </button>
         </div>
       </form>
     </motion.div>
@@ -328,14 +330,12 @@ function PortfolioDetailView({
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
       >
-        <motion.button
+        <button
           onClick={onBack}
-          className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-110 active:scale-90 transition-all duration-200"
         >
           <ChevronLeft className="w-5 h-5" />
-        </motion.button>
+        </button>
         <div>
           <h3 className="text-xl font-medium">{portfolio.name}</h3>
           {portfolio.description && (
@@ -386,15 +386,13 @@ function PortfolioDetailView({
       >
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-lg font-medium">Holdings</h4>
-          <motion.button
+          <button
             onClick={onAddHolding}
-            className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 hover:bg-white/20 transition-all text-sm flex items-center gap-2"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 hover:bg-white/20 hover:scale-105 active:scale-95 transition-all duration-200 text-sm flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Add Holding
-          </motion.button>
+          </button>
         </div>
 
         {isLoading ? (
@@ -415,12 +413,9 @@ function PortfolioDetailView({
               const holdingPositive = gainLoss !== null && gainLoss >= 0;
 
               return (
-                <motion.div
+                <div
                   key={holding.id}
-                  className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.25 + index * 0.05 }}
+                  className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -448,21 +443,19 @@ function PortfolioDetailView({
                       )}
                     </div>
 
-                    <motion.button
+                    <button
                       onClick={() => onDeleteHolding(holding.id)}
                       disabled={deletingHoldingId === holding.id}
-                      className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 transition-all text-gray-400 hover:text-red-400"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                      className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 hover:scale-110 active:scale-90 transition-all duration-200 text-gray-400 hover:text-red-400"
                     >
                       {deletingHoldingId === holding.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Trash2 className="w-4 h-4" />
                       )}
-                    </motion.button>
+                    </button>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
@@ -526,14 +519,12 @@ function AddHoldingForm({
     >
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-medium">Add Holding</h3>
-        <motion.button
+        <button
           onClick={onCancel}
-          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 hover:scale-110 active:scale-90 transition-all duration-200"
         >
           <X className="w-4 h-4" />
-        </motion.button>
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -592,24 +583,20 @@ function AddHoldingForm({
         </div>
 
         <div className="flex gap-3 pt-2">
-          <motion.button
+          <button
             type="submit"
             disabled={isLoading || !symbol || !quantity || !averagePrice}
-            className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 hover:bg-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 hover:bg-white/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             {isLoading ? "Adding..." : "Add Holding"}
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
           >
             Cancel
-          </motion.button>
+          </button>
         </div>
       </form>
     </motion.div>

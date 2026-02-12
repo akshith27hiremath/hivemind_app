@@ -14,10 +14,6 @@ import {
   SeriesMarker,
 } from "lightweight-charts";
 import { Newspaper, TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
-import {
-  historicalStockNews,
-  type HistoricalNewsEvent,
-} from "@/lib/mock-data/news";
 
 interface PriceData {
   time: string;
@@ -28,9 +24,19 @@ interface PriceData {
   volume: number;
 }
 
+export interface ChartNewsEvent {
+  id: string;
+  date: string; // YYYY-MM-DD
+  title: string;
+  description: string;
+  sentiment: "positive" | "negative" | "neutral";
+  impact: "high" | "medium" | "low";
+}
+
 interface StockChartProps {
   data: PriceData[];
   symbol: string;
+  newsEvents?: ChartNewsEvent[];
 }
 
 type ChartType = "area" | "candlestick" | "line";
@@ -45,19 +51,19 @@ const TIME_RANGE_DAYS: Record<TimeRange, number | null> = {
   "MAX": null, // Show all data
 };
 
-export function StockChart({ data, symbol }: StockChartProps) {
+export function StockChart({ data, symbol, newsEvents: newsEventsProp }: StockChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Area" | "Candlestick" | "Line"> | null>(null);
   const [chartType, setChartType] = useState<ChartType>("area");
   const [timeRange, setTimeRange] = useState<TimeRange>("1Y");
   const [showNewsMarkers, setShowNewsMarkers] = useState(true);
-  const [hoveredNews, setHoveredNews] = useState<HistoricalNewsEvent | null>(null);
+  const [hoveredNews, setHoveredNews] = useState<ChartNewsEvent | null>(null);
 
-  // Get news events for this stock
+  // Use news events from props (real data) or empty array
   const newsEvents = useMemo(() => {
-    return historicalStockNews[symbol] || [];
-  }, [symbol]);
+    return newsEventsProp ?? [];
+  }, [newsEventsProp]);
 
   // Filter data based on time range
   const filteredData = useMemo(() => {

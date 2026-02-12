@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { GlassButton } from "./glass-button";
 import { useUser, useClerk } from "@clerk/nextjs";
+import { useRouter, usePathname } from "next/navigation";
 import { useDashboard, type PanelType } from "./dashboard-context";
 
 const navigationItems: { icon: typeof FileText; label: string; panel: PanelType }[] = [
@@ -28,6 +29,17 @@ export function Sidebar() {
   const { activePanel, setActivePanel } = useDashboard();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const handleNavClick = (panel: PanelType) => {
+    setActivePanel(panel);
+    // If we're on a nested route (e.g. /dashboard/portfolios/[id]),
+    // navigate back to /dashboard so the panel switcher renders
+    if (pathname !== "/dashboard") {
+      router.push("/dashboard");
+    }
+  };
 
   const initials = user?.firstName && user?.lastName
     ? `${user.firstName[0]}${user.lastName[0]}`
@@ -54,17 +66,15 @@ export function Sidebar() {
             key={item.panel}
             icon={item.icon}
             label={item.label}
-            onClick={() => setActivePanel(item.panel)}
+            onClick={() => handleNavClick(item.panel)}
             isActive={activePanel === item.panel}
           />
         ))}
       </div>
 
       {/* User Profile */}
-      <motion.div
-        className="mt-auto p-4 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10"
-        whileHover={{ scale: 1.02 }}
-        transition={{ duration: 0.2 }}
+      <div
+        className="mt-auto p-4 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 hover:scale-[1.02] transition-transform duration-200"
       >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white/20 to-white/10 flex items-center justify-center text-white font-medium">
@@ -95,7 +105,7 @@ export function Sidebar() {
             Sign Out
           </button>
         </div>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }

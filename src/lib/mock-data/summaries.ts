@@ -1,3 +1,6 @@
+// @deprecated - Kept for rollback only. All dashboard components now use Intelligence API via intelligence-data-provider.
+// Safe to delete once Intelligence API integration is fully validated in production.
+
 export interface SummaryItem {
   id: number;
   stock: string;

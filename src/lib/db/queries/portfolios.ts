@@ -14,16 +14,36 @@ import {
 // ============================================
 
 export const SP500_SAMPLE_STOCKS = [
+  // Portfolio Holdings (10)
   { symbol: "AAPL", name: "Apple Inc.", exchange: "NASDAQ" },
   { symbol: "MSFT", name: "Microsoft Corporation", exchange: "NASDAQ" },
+  { symbol: "NVDA", name: "NVIDIA Corporation", exchange: "NASDAQ" },
   { symbol: "GOOGL", name: "Alphabet Inc.", exchange: "NASDAQ" },
   { symbol: "AMZN", name: "Amazon.com Inc.", exchange: "NASDAQ" },
-  { symbol: "NVDA", name: "NVIDIA Corporation", exchange: "NASDAQ" },
   { symbol: "META", name: "Meta Platforms Inc.", exchange: "NASDAQ" },
-  { symbol: "TSLA", name: "Tesla Inc.", exchange: "NASDAQ" },
+  { symbol: "TSM", name: "Taiwan Semiconductor", exchange: "NYSE" },
   { symbol: "JPM", name: "JPMorgan Chase & Co.", exchange: "NYSE" },
-  { symbol: "V", name: "Visa Inc.", exchange: "NYSE" },
   { symbol: "JNJ", name: "Johnson & Johnson", exchange: "NYSE" },
+  { symbol: "XOM", name: "Exxon Mobil Corporation", exchange: "NYSE" },
+  // Supply Chain Neighbors (10)
+  { symbol: "ASML", name: "ASML Holding", exchange: "NASDAQ" },
+  { symbol: "LRCX", name: "Lam Research", exchange: "NASDAQ" },
+  { symbol: "AMAT", name: "Applied Materials", exchange: "NASDAQ" },
+  { symbol: "MU", name: "Micron Technology", exchange: "NASDAQ" },
+  { symbol: "QCOM", name: "Qualcomm Inc.", exchange: "NASDAQ" },
+  { symbol: "AVGO", name: "Broadcom Inc.", exchange: "NASDAQ" },
+  { symbol: "TXN", name: "Texas Instruments", exchange: "NASDAQ" },
+  { symbol: "INTC", name: "Intel Corporation", exchange: "NASDAQ" },
+  { symbol: "AMD", name: "Advanced Micro Devices", exchange: "NASDAQ" },
+  { symbol: "CRM", name: "Salesforce Inc.", exchange: "NYSE" },
+  // Competitors / 2nd-Hop (7)
+  { symbol: "GS", name: "Goldman Sachs Group", exchange: "NYSE" },
+  { symbol: "V", name: "Visa Inc.", exchange: "NYSE" },
+  { symbol: "MA", name: "Mastercard Inc.", exchange: "NYSE" },
+  { symbol: "TSLA", name: "Tesla Inc.", exchange: "NASDAQ" },
+  { symbol: "NFLX", name: "Netflix Inc.", exchange: "NASDAQ" },
+  { symbol: "DIS", name: "Walt Disney Co.", exchange: "NYSE" },
+  { symbol: "BA", name: "Boeing Co.", exchange: "NYSE" },
 ] as const;
 
 export const VALID_SYMBOLS: string[] = SP500_SAMPLE_STOCKS.map((s) => s.symbol);

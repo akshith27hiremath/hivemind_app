@@ -90,25 +90,44 @@ docker compose -f docker-compose.dev.yml logs db
 docker compose -f docker-compose.dev.yml exec app npm run db:push -- --force
 ```
 
+### 4. Intelligence API (Mock)
+The mock Intelligence API runs as a separate container (`hivemind_mock`) and must be network-connected:
+```bash
+# Verify the intelligence network and container exist
+docker network inspect intelligence-network
+docker ps | findstr hivemind_mock
+
+# If not running, create network and connect:
+docker network create intelligence-network
+docker network connect --alias intelligence-api intelligence-network hivemind_mock
+docker network connect intelligence-network hivemind-app
+
+# Test connectivity from app container
+docker compose -f docker-compose.dev.yml exec app node -e "const h=require('http');h.get('http://intelligence-api:8001/api/health',r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>console.log(d))})"
+```
+
 ### Services Architecture
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Docker Compose                        │
-├─────────────────────────┬───────────────────────────────┤
-│  app (Next.js)          │  db (PostgreSQL 16)           │
-│  - Port 3000            │  - Port 5433 (external)       │
-│  - Hot reload enabled   │  - Port 5432 (internal)       │
-│  - WATCHPACK_POLLING    │  - Volume: postgres_data      │
-└─────────────────────────┴───────────────────────────────┘
-         │                           │
-         ▼                           │
-┌─────────────────────┐              │
-│  External Services  │              │
-├─────────────────────┤              │
-│  Clerk (auth)       │◄─────────────┘
-│  Stripe (payments)  │   Webhooks sync to DB
-│  Yahoo Finance API  │
-└─────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    Docker Compose                            │
+├─────────────────────────┬───────────────────────────────────┤
+│  app (Next.js)          │  db (PostgreSQL 16)               │
+│  - Port 3000            │  - Port 5433 (external)           │
+│  - Hot reload enabled   │  - Port 5432 (internal)           │
+│  - WATCHPACK_POLLING    │  - Volume: postgres_data          │
+└─────────┬───────────────┴───────────────────────────────────┘
+          │
+          ├──── intelligence-network ────┐
+          │                              │
+          ▼                              ▼
+┌─────────────────────┐    ┌──────────────────────────────┐
+│  External Services  │    │  hivemind_mock (Intelligence) │
+├─────────────────────┤    │  - Port 8001                  │
+│  Clerk (auth)       │    │  - Alias: intelligence-api    │
+│  Stripe (payments)  │    │  - API Key: X-API-Key header  │
+│  Yahoo Finance API  │    │  - 27 tickers, 18 endpoints   │
+└─────────────────────┘    │  - Docs: MOCK_API_DOCS.md     │
+                           └──────────────────────────────┘
 ```
 
 ---
@@ -123,7 +142,7 @@ docker compose -f docker-compose.dev.yml exec app npm run db:push -- --force
 - Stripe CLI (for webhook testing)
 
 ### Environment Variables
-Required in `.env.local`:
+Required in `.env.local` (and duplicated in `.env` for Docker Compose substitution):
 ```env
 # Database (Docker handles this, but needed for local drizzle commands)
 DATABASE_URL=postgresql://postgres:postgres@localhost:5433/hivemind_dev
@@ -138,7 +157,14 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 STRIPE_SECRET_KEY=sk_test_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 STRIPE_PRICE_ID_PRO=price_xxx
+
+# Intelligence API
+INTELLIGENCE_API_URL=http://intelligence-api:8001
+INTELLIGENCE_API_KEY=hm-dev-key-change-in-prod
+NEXT_PUBLIC_INTELLIGENCE_ENABLED=true
 ```
+
+**Important**: Docker Compose reads `.env` (NOT `.env.local`) for variable substitution. Keep Intelligence API vars in BOTH files.
 
 ### Running the App
 ```bash
@@ -250,17 +276,32 @@ For E2E auth tests, a test user is configured:
 - Idempotent customer creation (no duplicate Stripe customers)
 
 ### Protected Routes
-- Dashboard: User welcome page + stocks link
+- Dashboard: Intelligence-powered panels (summary, news, screener, impact analysis)
 - Settings: Profile info + subscription management
 - Pricing: Plan comparison + upgrade button
-- Stocks: Browse 10 S&P 500 stocks with interactive charts
+- Stocks: Browse 27 supported stocks with interactive charts + real news
 
-### Stock Data (Yahoo Finance)
-- **10 S&P 500 Stocks**: AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, JPM, V, JNJ
+### Stock Data (Yahoo Finance + Intelligence API)
+- **27 Supported Tickers**: 10 portfolio + 10 supply chain + 7 competitors/2nd-hop
+  - Portfolio: AAPL, MSFT, NVDA, GOOGL, AMZN, META, TSM, JPM, JNJ, XOM
+  - Supply Chain: ASML, LRCX, AMAT, MU, QCOM, AVGO, TXN, INTC, AMD, CRM
+  - Competitors: GS, V, MA, TSLA, NFLX, DIS, BA
 - **12 Years History**: ~3,000 data points per stock stored in database
 - **TradingView Charts**: Area, candlestick, line charts with time ranges (1M-MAX)
 - **Daily Sync**: `/api/stocks/sync` fetches incremental updates
 - **Live Quotes**: Real-time price from Yahoo Finance API
+- **News Articles**: Real articles from Intelligence API with enrichment (signals, entities, relevance)
+
+### Intelligence API Integration
+- **BFF Pattern**: Frontend → Next.js API routes (`/api/intelligence/*`) → Intelligence API
+- **Data Provider**: `IntelligenceDataProvider` React context wraps dashboard, polls every 5 min
+- **Stale Detection**: Data older than 10 min shows stale badge, auto-refreshes
+- **Endpoint Docs**: Full reference in `MOCK_API_DOCS.md` (18 endpoints)
+- **Key Endpoints Used**:
+  - `POST /api/dashboard` — batch endpoint for digest, exposure, alerts, narratives
+  - `POST /api/signals/aggregate` — signal breakdown by type/holding over N days
+  - `GET /api/articles` — paginated article feed with enrichment
+  - `GET /api/articles/{id}/full` — article + relevance + summaries combo
 
 ## API Routes
 
@@ -271,9 +312,13 @@ For E2E auth tests, a test user is configured:
 | `/api/portfolios/[id]` | GET, PATCH, DELETE | Single portfolio operations |
 | `/api/portfolios/[id]/holdings` | GET, POST | List/add holdings |
 | `/api/portfolios/[id]/holdings/[holdingId]` | PATCH, DELETE | Update/remove holding |
-| `/api/stocks` | GET | List all 10 stocks with live quotes |
-| `/api/stocks/[symbol]` | GET | Stock detail with historical data from DB |
+| `/api/stocks` | GET | List all 27 stocks with live quotes |
+| `/api/stocks/[symbol]` | GET | Stock detail with historical data + articles |
 | `/api/stocks/sync` | GET, POST | GET: sync status, POST: trigger sync |
+| `/api/intelligence/dashboard` | POST | BFF proxy → Intelligence dashboard |
+| `/api/intelligence/signals` | POST | BFF proxy → Intelligence signals/aggregate |
+| `/api/intelligence/articles` | GET | BFF proxy → Intelligence articles feed |
+| `/api/intelligence/articles/[id]` | GET | BFF proxy → Intelligence article full |
 | `/api/stripe/checkout` | POST | Create checkout session |
 | `/api/stripe/portal` | POST | Create customer portal session |
 | `/api/subscription/status` | GET | Get user subscription status |
@@ -302,6 +347,16 @@ For E2E auth tests, a test user is configured:
 - [x] **Portfolio Manager**: Full CRUD synced with existing API
 - [x] **Dark Theme**: All protected pages updated to glassmorphism styling
 - [x] **News Markers**: lightweight-charts v5 createSeriesMarkers on stock charts
+
+### Completed Phases (Intelligence API Integration)
+- [x] **Intelligence Phase 1**: Foundation (types, client, config, mappers)
+- [x] **Intelligence Phase 2**: BFF proxy routes + IntelligenceDataProvider context
+- [x] **Intelligence Phase 3**: Summary panel migration (live digest data)
+- [x] **Intelligence Phase 4**: News panel migration (Critical, Sector, Stock → real articles)
+- [x] **Intelligence Phase 5**: Impact Analysis redesign (Signal Radar, Heatmap, Timeline)
+- [x] **Intelligence Phase 6**: Stock pages (real articles, chart markers, mock deprecation)
+- [x] **27-Ticker Expansion**: All stock lists updated to match Intelligence API watchlist
+- [x] **E2E Test Suite**: `test-intelligence-e2e.mjs` — 156 tests covering all data flows
 
 ## Code Conventions
 
@@ -333,6 +388,7 @@ For E2E auth tests, a test user is configured:
 ### Services
 - **app**: Next.js dev server (port 3000)
 - **db**: PostgreSQL 16 Alpine (port 5433 external, 5432 internal)
+- **hivemind_mock**: Intelligence API (port 8001, on `intelligence-network` with alias `intelligence-api`)
 
 ### Volumes
 - `postgres_data`: Database persistence
@@ -371,6 +427,17 @@ docker compose -f docker-compose.dev.yml logs db
 - Restart containers after adding new files
 - Check volume mounts in docker-compose
 
+**Intelligence API connection refused (ECONNREFUSED)**
+- Port is 8001, NOT 8000 — check `INTELLIGENCE_API_URL=http://intelligence-api:8001`
+- Verify `hivemind_mock` container is running: `docker ps | findstr hivemind_mock`
+- Verify both containers share `intelligence-network`: `docker network inspect intelligence-network`
+- Re-connect if needed: `docker network connect --alias intelligence-api intelligence-network hivemind_mock`
+
+**Hydration mismatch on dates**
+- Docker container runs UTC, browser runs local timezone
+- Always defer date formatting to client-only: `useState("") + useEffect(() => setDate(...))`
+- Never compute locale-dependent dates in server components
+
 ## Git Workflow
 
 ### Branch Strategy
@@ -386,12 +453,13 @@ test(scope): description
 ```
 
 ### Current Branch
-`feature/figma-dashboard-implementation` (includes all core phases + dashboard UI)
+`feature/intelligence-api-integration` (includes all core phases + dashboard UI + Intelligence API)
 
 ## Knowledge Core
 
 Accumulated learnings and patterns are stored in `knowledge-core.md`:
-- API version patterns (Yahoo Finance v3, lightweight-charts v5)
+- API version patterns (Yahoo Finance v3, lightweight-charts v5, Intelligence API)
 - Database patterns (Drizzle upserts, incremental sync)
-- UI patterns (TradingView-style controls)
-- Troubleshooting archive (Docker, Clerk)
+- UI patterns (TradingView-style controls, glassmorphism)
+- Intelligence API patterns (BFF proxy, data provider, 27 tickers)
+- Troubleshooting archive (Docker, Clerk, hydration, Intelligence API)

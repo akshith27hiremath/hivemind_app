@@ -53,6 +53,58 @@ const id = params.id as string;
 const { id } = await params;
 ```
 
+### Intelligence API (Mock Service)
+```
+Container: hivemind_mock (port 8001)
+Network: intelligence-network (external Docker network)
+Alias: intelligence-api (used by app container to resolve hostname)
+API Key: hm-dev-key-change-in-prod (X-API-Key header)
+Config: src/lib/intelligence/config.ts
+Client: src/lib/intelligence/client.ts (server-only, 10s timeout)
+Docs: MOCK_API_DOCS.md (18 endpoints, full reference)
+```
+
+**BFF Proxy Pattern** (Frontend never calls Intelligence API directly):
+```
+Browser → /api/intelligence/dashboard (POST) → Intelligence API /api/dashboard
+Browser → /api/intelligence/signals  (POST) → Intelligence API /api/signals/aggregate
+Browser → /api/intelligence/articles (GET)  → Intelligence API /api/articles
+Browser → /api/intelligence/articles/[id] (GET) → Intelligence API /api/articles/{id}/full
+```
+- Auth (Clerk) + portfolio injection happen server-side in BFF routes
+- Portfolio holdings are converted to `{ticker, weight_pct}` format for Intelligence API
+
+**Data Provider Pattern**:
+```typescript
+// IntelligenceDataProvider wraps the dashboard layout
+// Provides: dashboard, signals, loading, error, staleAt, refresh()
+// Polls every 5 min (POLLING_INTERVAL), stale badge after 10 min (STALE_THRESHOLD)
+const { dashboard, signals } = useIntelligenceData();
+```
+
+**27 Supported Tickers** (must match across all stock lists):
+- Portfolio (10): AAPL, MSFT, NVDA, GOOGL, AMZN, META, TSM, JPM, JNJ, XOM
+- Supply Chain (10): ASML, LRCX, AMAT, MU, QCOM, AVGO, TXN, INTC, AMD, CRM
+- Competitors (7): GS, V, MA, TSLA, NFLX, DIS, BA
+- Lists live in: `src/lib/stocks.ts`, `src/lib/db/queries/portfolios.ts`, 3 UI components
+
+**RiskAlert vs DigestItem shapes** (common mistake):
+```typescript
+// digest.sections.risk_alerts → RiskAlert shape:
+{ alert_id, trigger_article_id, trigger_headline, severity_tier, affected_holdings }
+
+// digest.sections.direct_news → DigestItem shape:
+{ article_id, headline, relevance_score, affected_holdings, summary }
+
+// DO NOT mix these up — they have different field names!
+```
+
+**Testing Intelligence E2E**:
+```bash
+docker compose -f docker-compose.dev.yml exec app node test-intelligence-e2e.mjs
+# 156 tests covering all endpoints, data shapes, component compatibility
+```
+
 ---
 
 ## Database Patterns
@@ -154,4 +206,14 @@ await db
 - Dark glassmorphism theme applied to all protected pages
 - Dashboard panels: CriticalNews, SectorNews, StockNews, StockScreener, ImpactAnalysis
 - News markers added to lightweight-charts using createSeriesMarkers v5 API
-- Mock historical news data for all 10 S&P 500 stocks in `src/lib/mock-data/news.ts`
+
+### Intelligence API Integration (2026-02-11)
+- BFF proxy pattern: 4 Next.js API routes proxying to Intelligence API
+- IntelligenceDataProvider context with polling + stale detection
+- All 6 dashboard panels migrated from mock data to live Intelligence API
+- Stock pages now show real articles with chart markers from Intelligence enrichment
+- Mock data files (`src/lib/mock-data/news.ts`, `summaries.ts`) deprecated, kept for rollback
+- Impact Analysis redesigned: Signal Radar (recharts), Signal Heatmap (CSS grid), Signal Timeline
+- Expanded stock lists from 10 → 27 tickers to match Intelligence API watchlist
+- E2E test suite: 156 tests validating all data flows (test-intelligence-e2e.mjs)
+- Hydration fix: date formatting deferred to client-only useEffect to avoid UTC/local mismatch
