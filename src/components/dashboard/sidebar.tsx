@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import {
   FileText,
   Briefcase,
@@ -25,7 +24,7 @@ const navigationItems: { icon: typeof FileText; label: string; panel: PanelType 
   { icon: Brain, label: "Impact Analysis", panel: "impact" },
 ];
 
-export function Sidebar() {
+export function Sidebar({ visible, onNavClick }: { visible: boolean; onNavClick?: () => void }) {
   const { activePanel, setActivePanel } = useDashboard();
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -34,8 +33,7 @@ export function Sidebar() {
 
   const handleNavClick = (panel: PanelType) => {
     setActivePanel(panel);
-    // If we're on a nested route (e.g. /dashboard/portfolios/[id]),
-    // navigate back to /dashboard so the panel switcher renders
+    onNavClick?.();
     if (pathname !== "/dashboard") {
       router.push("/dashboard");
     }
@@ -46,11 +44,10 @@ export function Sidebar() {
     : user?.firstName?.[0] || "U";
 
   return (
-    <motion.div
-      className="w-64 p-6 border-r border-white/10 flex flex-col bg-hm-sidebar/50 backdrop-blur-xl"
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.3 }}
+    <div
+      className={`fixed left-0 top-0 h-full w-64 p-6 border-r border-white/10 flex flex-col bg-hm-sidebar/80 backdrop-blur-xl z-50 transition-transform duration-300 ease-in-out ${
+        visible ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+      }`}
     >
       {/* Logo */}
       <div className="flex items-center gap-3 mb-12">
@@ -106,6 +103,6 @@ export function Sidebar() {
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

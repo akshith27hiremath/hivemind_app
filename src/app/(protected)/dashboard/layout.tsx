@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Sidebar, DashboardHeader, DashboardProvider } from "@/components/dashboard";
 import { IntelligenceDataProvider } from "@/components/dashboard/intelligence-data-provider";
 
@@ -8,6 +9,8 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <IntelligenceDataProvider>
     <DashboardProvider>
@@ -18,19 +21,22 @@ export default function DashboardLayout({
         {/* Subtle animated gradient */}
         <div className="fixed top-0 right-0 w-1/2 h-1/2 bg-white/[0.02] rounded-full blur-3xl pointer-events-none animate-[pulse-bg_8s_ease-in-out_infinite]" />
 
-        <div className="relative z-10 flex h-screen">
-          {/* Sidebar */}
-          <Sidebar />
+        {/* Sidebar hover zone */}
+        <div
+          className="fixed left-0 top-0 h-full z-50"
+          onMouseEnter={() => setSidebarOpen(true)}
+          onMouseLeave={() => setSidebarOpen(false)}
+        >
+          {/* Invisible trigger strip */}
+          <div className="w-3 h-full" />
+          <Sidebar visible={sidebarOpen} onNavClick={() => setSidebarOpen(false)} />
+        </div>
 
-          {/* Main Content */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Header */}
-            <DashboardHeader />
-
-            {/* Content Area */}
-            <div className="flex-1 overflow-y-auto scrollbar-thin">
-              <div className="p-6">{children}</div>
-            </div>
+        {/* Main Content — full width */}
+        <div className="relative z-10 flex flex-col h-screen">
+          <DashboardHeader />
+          <div className="flex-1 overflow-y-auto scrollbar-thin">
+            <div className="p-6">{children}</div>
           </div>
         </div>
       </div>
