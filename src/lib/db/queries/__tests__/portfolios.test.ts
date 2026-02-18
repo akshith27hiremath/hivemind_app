@@ -64,8 +64,8 @@ describe("Portfolio Queries", () => {
   });
 
   describe("S&P 500 Stock Validation", () => {
-    it("should have 10 valid symbols", () => {
-      expect(VALID_SYMBOLS).toHaveLength(10);
+    it("should have 27 valid symbols", () => {
+      expect(VALID_SYMBOLS).toHaveLength(27);
     });
 
     it("should validate known S&P 500 symbols", () => {

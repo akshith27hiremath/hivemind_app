@@ -21,7 +21,7 @@ vi.mock("@/lib/db/queries/portfolios", () => ({
   deleteHolding: vi.fn(),
   isValidSymbol: vi.fn(),
   getStockBySymbol: vi.fn(),
-  VALID_SYMBOLS: ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM", "V", "JNJ"],
+  VALID_SYMBOLS: ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSM", "JPM", "JNJ", "XOM", "ASML", "LRCX", "AMAT", "MU", "QCOM", "AVGO", "TXN", "INTC", "AMD", "CRM", "GS", "V", "MA", "TSLA", "NFLX", "DIS", "BA"],
 }));
 
 // Import after mocking
@@ -130,10 +130,10 @@ describe("POST /api/portfolios/[id]/holdings", () => {
     vi.mocked(isValidSymbol).mockImplementation((s) =>
       ["AAPL", "MSFT", "GOOGL"].includes(s.toUpperCase())
     );
-    vi.mocked(getStockBySymbol).mockImplementation((s) => {
-      const stocks: Record<string, { symbol: string; name: string; exchange: string }> = {
-        AAPL: { symbol: "AAPL", name: "Apple Inc.", exchange: "NASDAQ" },
-        MSFT: { symbol: "MSFT", name: "Microsoft", exchange: "NASDAQ" },
+    vi.mocked(getStockBySymbol).mockImplementation((s: string) => {
+      const stocks: Record<string, (typeof import("@/lib/db/queries/portfolios"))["SP500_SAMPLE_STOCKS"][number] | undefined> = {
+        AAPL: { symbol: "AAPL" as const, name: "Apple Inc." as const, exchange: "NASDAQ" as const },
+        MSFT: { symbol: "MSFT" as const, name: "Microsoft Corporation" as const, exchange: "NASDAQ" as const },
       };
       return stocks[s.toUpperCase()];
     });

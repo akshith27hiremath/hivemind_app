@@ -3,7 +3,7 @@
 
 // Server-side only
 export const INTELLIGENCE_API_URL =
-  process.env.INTELLIGENCE_API_URL ?? "http://intelligence-api:8001";
+  process.env.INTELLIGENCE_API_URL ?? "http://intelligence_api:8001";
 
 export const INTELLIGENCE_API_KEY =
   process.env.INTELLIGENCE_API_KEY ?? "";

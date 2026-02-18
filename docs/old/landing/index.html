@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hivemind — Portfolio Intelligence for the Individual Investor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Grain -->
+    <div class="grain"></div>
+
+    <!-- Cursor -->
+    <div class="cursor-dot" id="cursor-dot"></div>
+    <div class="cursor-ring" id="cursor-ring"></div>
+
+    <!-- Background Graph -->
+    <canvas id="bg-graph"></canvas>
+
+    <!-- ============== NAV ============== -->
+    <nav class="nav" id="nav">
+        <div class="nav-inner">
+            <a href="#" class="nav-logo">
+                <svg class="logo-icon" width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <circle cx="14" cy="14" r="3" fill="currentColor"/>
+                    <circle cx="14" cy="4" r="2" fill="currentColor" opacity="0.6"/>
+                    <circle cx="23" cy="9" r="2" fill="currentColor" opacity="0.6"/>
+                    <circle cx="23" cy="19" r="2" fill="currentColor" opacity="0.6"/>
+                    <circle cx="14" cy="24" r="2" fill="currentColor" opacity="0.6"/>
+                    <circle cx="5" cy="19" r="2" fill="currentColor" opacity="0.6"/>
+                    <circle cx="5" cy="9" r="2" fill="currentColor" opacity="0.6"/>
+                    <line x1="14" y1="14" x2="14" y2="4" stroke="currentColor" stroke-width="0.8" opacity="0.3"/>
+                    <line x1="14" y1="14" x2="23" y2="9" stroke="currentColor" stroke-width="0.8" opacity="0.3"/>
+                    <line x1="14" y1="14" x2="23" y2="19" stroke="currentColor" stroke-width="0.8" opacity="0.3"/>
+                    <line x1="14" y1="14" x2="14" y2="24" stroke="currentColor" stroke-width="0.8" opacity="0.3"/>
+                    <line x1="14" y1="14" x2="5" y2="19" stroke="currentColor" stroke-width="0.8" opacity="0.3"/>
+                    <line x1="14" y1="14" x2="5" y2="9" stroke="currentColor" stroke-width="0.8" opacity="0.3"/>
+                </svg>
+                <span>hivemind</span>
+            </a>
+            <div class="nav-links">
+                <a href="#how-it-works">How It Works</a>
+                <a href="#ripple">The Ripple Effect</a>
+                <a href="#daily-brief">Daily Brief</a>
+                <a href="#pricing">Pricing</a>
+            </div>
+            <div class="nav-right">
+                <a href="#" class="nav-link-sign">Sign In</a>
+                <a href="#" class="btn btn-primary btn-nav">Get Early Access</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ============== HERO ============== -->
+    <section class="hero" id="hero">
+        <div class="hero-content">
+            <div class="hero-badge" data-reveal>
+                <span class="badge-dot"></span>
+                Now in Early Access
+            </div>
+
+            <h1 class="hero-title" data-reveal data-delay="100">
+                <span class="hero-line">Your portfolio is</span>
+                <span class="hero-line">connected to <em class="hero-em">everything.</em></span>
+                <span class="hero-line">We show you <span class="hero-highlight">how.</span></span>
+            </h1>
+
+            <p class="hero-sub" data-reveal data-delay="200">
+                Hivemind maps the hidden relationships between your holdings and
+                the world's financial events. One daily brief. Every connection
+                that matters. Nothing that doesn't.
+            </p>
+
+            <div class="hero-actions" data-reveal data-delay="300">
+                <a href="#" class="btn btn-primary btn-large">
+                    <span>Start Free — 3 Stocks</span>
+                </a>
+                <a href="#ripple" class="btn btn-ghost btn-large">
+                    <span>See it in action</span>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </a>
+            </div>
+
+            <div class="hero-proof" data-reveal data-delay="400">
+                <div class="hero-avatars">
+                    <div class="avatar" style="--hue:210">JK</div>
+                    <div class="avatar" style="--hue:30">SR</div>
+                    <div class="avatar" style="--hue:150">ML</div>
+                    <div class="avatar" style="--hue:280">DP</div>
+                    <div class="avatar avatar-more">+2.4k</div>
+                </div>
+                <span class="hero-proof-text">Join 2,400+ investors in early access</span>
+            </div>
+        </div>
+
+        <!-- Hero Interactive Graph -->
+        <div class="hero-graph-container" data-reveal data-delay="300">
+            <canvas id="hero-graph" class="hero-graph-canvas"></canvas>
+            <div class="hero-graph-labels" id="hero-graph-labels"></div>
+        </div>
+
+        <div class="scroll-cue">
+            <span>Scroll to explore</span>
+            <div class="scroll-cue-line"><div class="scroll-cue-dot"></div></div>
+        </div>
+    </section>
+
+    <!-- ============== PAIN SECTION ============== -->
+    <section class="pain-section">
+        <div class="container">
+            <div class="pain-grid">
+                <div class="pain-left" data-reveal>
+                    <span class="section-tag">The Problem</span>
+                    <h2 class="pain-title">You're managing a portfolio<br>with a <em>newspaper</em> and a <em>prayer.</em></h2>
+                </div>
+                <div class="pain-right">
+                    <div class="pain-card" data-reveal data-delay="100">
+                        <div class="pain-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </div>
+                        <h3>200+ hours/year</h3>
+                        <p>The average engaged investor spends scanning news, cross-referencing sources, and trying to connect dots manually.</p>
+                    </div>
+                    <div class="pain-card" data-reveal data-delay="200">
+                        <div class="pain-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                        <h3>Blindsided by connections</h3>
+                        <p>A regulatory change in China affects your semiconductor stock through three layers of supply chain. You'd never catch it in time.</p>
+                    </div>
+                    <div class="pain-card" data-reveal data-delay="300">
+                        <div class="pain-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                        <h3>$24,000/yr for Bloomberg</h3>
+                        <p>Institutional-grade intelligence exists — but it's priced for hedge funds, not individual investors managing their own money.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============== MARQUEE ============== -->
+    <section class="marquee-section">
+        <div class="marquee-track">
+            <div class="marquee-slide">
+                <span>SEC FILINGS</span><span class="m-dot">&#x2022;</span>
+                <span>EARNINGS REPORTS</span><span class="m-dot">&#x2022;</span>
+                <span>SUPPLY CHAIN DATA</span><span class="m-dot">&#x2022;</span>
+                <span>MACRO INDICATORS</span><span class="m-dot">&#x2022;</span>
+                <span>EXECUTIVE CHANGES</span><span class="m-dot">&#x2022;</span>
+                <span>REGULATORY FILINGS</span><span class="m-dot">&#x2022;</span>
+                <span>INDUSTRY REPORTS</span><span class="m-dot">&#x2022;</span>
+                <span>NEWS WIRE</span><span class="m-dot">&#x2022;</span>
+                <span>SEC FILINGS</span><span class="m-dot">&#x2022;</span>
+                <span>EARNINGS REPORTS</span><span class="m-dot">&#x2022;</span>
+                <span>SUPPLY CHAIN DATA</span><span class="m-dot">&#x2022;</span>
+                <span>MACRO INDICATORS</span><span class="m-dot">&#x2022;</span>
+                <span>EXECUTIVE CHANGES</span><span class="m-dot">&#x2022;</span>
+                <span>REGULATORY FILINGS</span><span class="m-dot">&#x2022;</span>
+                <span>INDUSTRY REPORTS</span><span class="m-dot">&#x2022;</span>
+                <span>NEWS WIRE</span><span class="m-dot">&#x2022;</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============== HOW IT WORKS ============== -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <div class="section-header" data-reveal>
+                <span class="section-tag">How It Works</span>
+                <h2 class="section-title">From noise to signal<br>in three steps.</h2>
+            </div>
+
+            <div class="steps-row">
+                <div class="step-card" data-reveal>
+                    <div class="step-num">01</div>
+                    <div class="step-visual">
+                        <div class="connect-demo" id="connect-demo">
+                            <div class="connect-slot"><span class="slot-icon">+</span><span>AAPL</span></div>
+                            <div class="connect-slot filled"><span class="slot-check">&#10003;</span><span>TSLA</span></div>
+                            <div class="connect-slot filled"><span class="slot-check">&#10003;</span><span>NVDA</span></div>
+                            <div class="connect-slot"><span class="slot-icon">+</span><span>Add stock</span></div>
+                        </div>
+                    </div>
+                    <h3>Connect your portfolio</h3>
+                    <p>Add your holdings manually or sync your brokerage. Hivemind maps every stock against our knowledge graph.</p>
+                </div>
+
+                <div class="step-card" data-reveal data-delay="150">
+                    <div class="step-num">02</div>
+                    <div class="step-visual">
+                        <div class="scan-demo">
+                            <div class="scan-line" id="scan-line"></div>
+                            <div class="scan-source">Reuters <span class="scan-check">&#10003;</span></div>
+                            <div class="scan-source">SEC EDGAR <span class="scan-check">&#10003;</span></div>
+                            <div class="scan-source active">Industry Reports <span class="scan-spinner"></span></div>
+                            <div class="scan-source dim">Earnings Calls</div>
+                            <div class="scan-source dim">Macro Data</div>
+                            <div class="scan-count" id="scan-count">2,847 sources scanned</div>
+                        </div>
+                    </div>
+                    <h3>We scan everything</h3>
+                    <p>Thousands of sources — news, filings, earnings, reports — processed daily through our knowledge graph for relevance.</p>
+                </div>
+
+                <div class="step-card" data-reveal data-delay="300">
+                    <div class="step-num">03</div>
+                    <div class="step-visual">
+                        <div class="brief-demo">
+                            <div class="brief-header">
+                                <span class="brief-date">Today's Brief</span>
+                                <span class="brief-count">4 insights</span>
+                            </div>
+                            <div class="brief-item high">
+                                <span class="brief-dot"></span>
+                                <span>NVDA supply chain disruption via TSMC</span>
+                            </div>
+                            <div class="brief-item medium">
+                                <span class="brief-dot"></span>
+                                <span>New EU AI regulation affects 3 holdings</span>
+                            </div>
+                            <div class="brief-item low">
+                                <span class="brief-dot"></span>
+                                <span>TSLA earnings beat — supplier impact</span>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>One daily brief</h3>
+                    <p>Every morning, you get one digestible overview. What matters, why it matters, and how it connects to your money.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============== RIPPLE EFFECT — THE KILLER SECTION ============== -->
+    <section class="ripple-section" id="ripple">
+        <div class="container">
+            <div class="section-header" data-reveal>
+                <span class="section-tag">The Ripple Effect</span>
+                <h2 class="section-title">The connection your<br>analyst would catch.<br><em>Now you can too.</em></h2>
+                <p class="section-sub">Click any event node to see how one headline creates cascading effects across your portfolio.</p>
+            </div>
+
+            <div class="ripple-stage" data-reveal>
+                <canvas id="ripple-canvas" class="ripple-canvas"></canvas>
+                <div id="ripple-labels" class="ripple-labels"></div>
+                <div id="ripple-info" class="ripple-info">
+                    <div class="ripple-info-inner" id="ripple-info-inner">
+                        <span class="ripple-info-tag">Click a node to explore</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ripple-examples" data-reveal>
+                <button class="ripple-btn active" data-scenario="0">Musk leaves Tesla</button>
+                <button class="ripple-btn" data-scenario="1">China bans rare earths</button>
+                <button class="ripple-btn" data-scenario="2">Fed raises rates</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============== DAILY BRIEF PREVIEW ============== -->
+    <section class="brief-section" id="daily-brief">
+        <div class="container">
+            <div class="brief-layout">
+                <div class="brief-text" data-reveal>
+                    <span class="section-tag">The Daily Brief</span>
+                    <h2 class="section-title">Your morning<br>just got<br><em>45 minutes shorter.</em></h2>
+                    <p class="brief-desc">No more scanning Reuters, CNBC, Seeking Alpha, Twitter, and SEC filings. Hivemind distills thousands of data points into one clear, personalized overview every morning before you open your trading app.</p>
+                    <div class="brief-stats">
+                        <div class="brief-stat">
+                            <span class="brief-stat-num" data-count="4247">0</span>
+                            <span class="brief-stat-label">Sources scanned daily</span>
+                        </div>
+                        <div class="brief-stat">
+                            <span class="brief-stat-num" data-count="3">0</span>
+                            <span class="brief-stat-label">Minutes to read</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="brief-preview" data-reveal data-delay="200">
+                    <div class="brief-mockup">
+                        <div class="mockup-header">
+                            <div class="mockup-top">
+                                <span class="mockup-day">Monday, Feb 13</span>
+                                <span class="mockup-portfolio">Your Portfolio Brief</span>
+                            </div>
+                            <div class="mockup-summary">
+                                <div class="summary-badge summary-high">2 High Impact</div>
+                                <div class="summary-badge summary-med">1 Medium</div>
+                                <div class="summary-badge summary-low">3 Low</div>
+                            </div>
+                        </div>
+
+                        <div class="mockup-insight" id="mockup-insight-1">
+                            <div class="insight-header">
+                                <span class="insight-impact high">HIGH IMPACT</span>
+                                <span class="insight-stocks">NVDA, AMD, TSM</span>
+                            </div>
+                            <h4>TSMC reports capacity constraints — GPU shortage likely through Q3</h4>
+                            <p>TSMC's latest filing reveals fab utilization at 98%. This directly constrains NVIDIA's H100 production timeline and creates pricing pressure across your semiconductor holdings.</p>
+                            <div class="insight-path">
+                                <span class="path-node">TSMC Filing</span>
+                                <span class="path-arrow">&rarr;</span>
+                                <span class="path-node">GPU Supply</span>
+                                <span class="path-arrow">&rarr;</span>
+                                <span class="path-node path-yours">Your: NVDA</span>
+                            </div>
+                        </div>
+
+                        <div class="mockup-insight">
+                            <div class="insight-header">
+                                <span class="insight-impact medium">MEDIUM</span>
+                                <span class="insight-stocks">AMZN, SHOP</span>
+                            </div>
+                            <h4>EU Digital Markets Act enforcement begins — e-commerce impact</h4>
+                            <p>New compliance requirements may affect marketplace operations for your retail holdings across European markets.</p>
+                            <div class="insight-path">
+                                <span class="path-node">EU Regulation</span>
+                                <span class="path-arrow">&rarr;</span>
+                                <span class="path-node">E-Commerce</span>
+                                <span class="path-arrow">&rarr;</span>
+                                <span class="path-node path-yours">Your: AMZN</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============== SOCIAL PROOF ============== -->
+    <section class="proof-section">
+        <div class="container">
+            <div class="section-header" data-reveal>
+                <span class="section-tag">What Investors Say</span>
+                <h2 class="section-title">Real investors.<br><em>Real edge.</em></h2>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial" data-reveal>
+                    <p>"I was spending 45 minutes every morning just reading headlines. Now I get one brief that tells me exactly what I need to know about my 12 holdings. The ripple connections alone are worth the subscription."</p>
+                    <div class="testimonial-author">
+                        <div class="avatar" style="--hue:210">JK</div>
+                        <div><strong>Jake K.</strong><span>Retail investor, 14 stocks</span></div>
+                    </div>
+                </div>
+                <div class="testimonial" data-reveal data-delay="100">
+                    <p>"Hivemind caught that the CHIPS Act would affect my logistics holdings before anyone on FinTwit was talking about it. That's 2nd-order thinking that I genuinely cannot do at scale on my own."</p>
+                    <div class="testimonial-author">
+                        <div class="avatar" style="--hue:30">SR</div>
+                        <div><strong>Sarah R.</strong><span>Software engineer, 8 stocks</span></div>
+                    </div>
+                </div>
+                <div class="testimonial" data-reveal data-delay="200">
+                    <p>"I've tried Seeking Alpha, Finviz, stock screeners — nothing connects the dots the way Hivemind does. It's not more data, it's better data. Specifically about MY portfolio."</p>
+                    <div class="testimonial-author">
+                        <div class="avatar" style="--hue:150">DM</div>
+                        <div><strong>David M.</strong><span>Portfolio: $180K across 11 stocks</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============== COMPARISON ============== -->
+    <section class="comparison-section">
+        <div class="container">
+            <div class="section-header" data-reveal>
+                <span class="section-tag">Why Hivemind</span>
+                <h2 class="section-title">Institutional intelligence.<br><em>Individual price.</em></h2>
+            </div>
+            <div class="comparison-table" data-reveal>
+                <div class="comp-header">
+                    <div class="comp-cell comp-feature"></div>
+                    <div class="comp-cell comp-them">Free Tools</div>
+                    <div class="comp-cell comp-bloomberg">Bloomberg</div>
+                    <div class="comp-cell comp-us">Hivemind</div>
+                </div>
+                <div class="comp-row">
+                    <div class="comp-cell comp-feature">Portfolio-specific insights</div>
+                    <div class="comp-cell comp-them"><span class="comp-no">&times;</span></div>
+                    <div class="comp-cell comp-bloomberg"><span class="comp-yes">&#10003;</span></div>
+                    <div class="comp-cell comp-us"><span class="comp-yes">&#10003;</span></div>
+                </div>
+                <div class="comp-row">
+                    <div class="comp-cell comp-feature">Multi-hop relationship mapping</div>
+                    <div class="comp-cell comp-them"><span class="comp-no">&times;</span></div>
+                    <div class="comp-cell comp-bloomberg"><span class="comp-partial">~</span></div>
+                    <div class="comp-cell comp-us"><span class="comp-yes">&#10003;</span></div>
+                </div>
+                <div class="comp-row">
+                    <div class="comp-cell comp-feature">Daily personalized brief</div>
+                    <div class="comp-cell comp-them"><span class="comp-no">&times;</span></div>
+                    <div class="comp-cell comp-bloomberg"><span class="comp-no">&times;</span></div>
+                    <div class="comp-cell comp-us"><span class="comp-yes">&#10003;</span></div>
+                </div>
+                <div class="comp-row">
+                    <div class="comp-cell comp-feature">Supply chain visibility</div>
+                    <div class="comp-cell comp-them"><span class="comp-no">&times;</span></div>
+                    <div class="comp-cell comp-bloomberg"><span class="comp-yes">&#10003;</span></div>
+                    <div class="comp-cell comp-us"><span class="comp-yes">&#10003;</span></div>
+                </div>
+                <div class="comp-row">
+                    <div class="comp-cell comp-feature">Built for retail investors</div>
+                    <div class="comp-cell comp-them"><span class="comp-yes">&#10003;</span></div>
+                    <div class="comp-cell comp-bloomberg"><span class="comp-no">&times;</span></div>
+                    <div class="comp-cell comp-us"><span class="comp-yes">&#10003;</span></div>
+                </div>
+                <div class="comp-row comp-row-price">
+                    <div class="comp-cell comp-feature">Price</div>
+                    <div class="comp-cell comp-them">$0</div>
+                    <div class="comp-cell comp-bloomberg">$24,000/yr</div>
+                    <div class="comp-cell comp-us"><strong>$29/mo</strong></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============== PRICING ============== -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="section-header" data-reveal>
+                <span class="section-tag">Pricing</span>
+                <h2 class="section-title">Start free.<br><em>Upgrade when you're hooked.</em></h2>
+            </div>
+
+            <div class="pricing-grid">
+                <div class="pricing-card" data-reveal>
+                    <div class="pricing-tier">Free</div>
+                    <div class="pricing-price">$0</div>
+                    <div class="pricing-desc">Get a taste of connected intelligence.</div>
+                    <ul class="pricing-list">
+                        <li>Track up to 3 stocks</li>
+                        <li>Weekly portfolio brief</li>
+                        <li>1-hop relationship mapping</li>
+                        <li>Basic news aggregation</li>
+                    </ul>
+                    <a href="#" class="btn btn-ghost btn-full">Get Started Free</a>
+                    <div class="pricing-note">No credit card required</div>
+                </div>
+
+                <div class="pricing-card pricing-featured" data-reveal data-delay="100">
+                    <div class="pricing-popular">MOST POPULAR</div>
+                    <div class="pricing-tier">Pro</div>
+                    <div class="pricing-price">$29<span>/mo</span></div>
+                    <div class="pricing-desc">Full portfolio intelligence, daily.</div>
+                    <ul class="pricing-list">
+                        <li>Unlimited stocks</li>
+                        <li>Daily personalized brief</li>
+                        <li>3-hop deep relationship mapping</li>
+                        <li>Supply chain & regulatory tracking</li>
+                        <li>Real-time alert triggers</li>
+                        <li>Earnings impact forecasting</li>
+                    </ul>
+                    <a href="#" class="btn btn-primary btn-full">Start 14-Day Trial</a>
+                    <div class="pricing-note">Cancel anytime</div>
+                </div>
+
+                <div class="pricing-card" data-reveal data-delay="200">
+                    <div class="pricing-tier">Annual</div>
+                    <div class="pricing-price">$19<span>/mo</span></div>
+                    <div class="pricing-desc">Everything in Pro. Billed annually.</div>
+                    <ul class="pricing-list">
+                        <li>Everything in Pro</li>
+                        <li>Save 34% vs monthly</li>
+                        <li>Priority feature access</li>
+                        <li>Export briefs to PDF</li>
+                        <li>API access (coming soon)</li>
+                    </ul>
+                    <a href="#" class="btn btn-ghost btn-full">Get Annual Plan</a>
+                    <div class="pricing-note">$228/yr — save $120</div>
+                </div>
+            </div>
+
+            <div class="pricing-faq" data-reveal>
+                <p class="pricing-disclaimer">Hivemind is a portfolio intelligence tool. We help you understand what's happening — not what to do about it. This is not investment advice.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============== CTA ============== -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-box" data-reveal>
+                <div class="cta-graph-bg" id="cta-graph-bg"></div>
+                <h2>Institutions have teams of analysts<br>connecting these dots.</h2>
+                <p class="cta-sub"><em>You have Hivemind.</em></p>
+                <a href="#" class="btn btn-primary btn-large">Get Early Access — Free</a>
+                <p class="cta-note">Free tier forever. Upgrade when you're ready.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <span class="nav-logo">
+                        <svg class="logo-icon" width="24" height="24" viewBox="0 0 28 28" fill="none">
+                            <circle cx="14" cy="14" r="3" fill="currentColor"/>
+                            <circle cx="14" cy="4" r="2" fill="currentColor" opacity="0.6"/>
+                            <circle cx="23" cy="9" r="2" fill="currentColor" opacity="0.6"/>
+                            <circle cx="23" cy="19" r="2" fill="currentColor" opacity="0.6"/>
+                            <circle cx="14" cy="24" r="2" fill="currentColor" opacity="0.6"/>
+                            <circle cx="5" cy="19" r="2" fill="currentColor" opacity="0.6"/>
+                            <circle cx="5" cy="9" r="2" fill="currentColor" opacity="0.6"/>
+                        </svg>
+                        <span>hivemind</span>
+                    </span>
+                    <p>Portfolio intelligence for the individual investor. See the connections Wall Street sees.</p>
+                </div>
+                <div class="footer-col"><h4>Product</h4><a href="#">Features</a><a href="#">Pricing</a><a href="#">Changelog</a><a href="#">Roadmap</a></div>
+                <div class="footer-col"><h4>Resources</h4><a href="#">How It Works</a><a href="#">Blog</a><a href="#">Case Studies</a><a href="#">FAQ</a></div>
+                <div class="footer-col"><h4>Legal</h4><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Disclaimers</a><a href="#">Security</a></div>
+            </div>
+            <div class="footer-bottom">
+                <span>&copy; 2026 Hivemind. Not investment advice.</span>
+                <div class="footer-socials">
+                    <a href="#">Twitter/X</a>
+                    <a href="#">LinkedIn</a>
+                    <a href="#">Reddit</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -11,8 +11,8 @@ HiveMind is a SaaS application for tracking and managing investment portfolios. 
 - **Authentication**: Clerk
 - **Payments**: Stripe (subscriptions)
 - **Styling**: Tailwind CSS + shadcn/ui
-- **Charts**: lightweight-charts v5.1 (TradingView) + Recharts v3.6
-- **Animation**: Framer Motion (motion/react)
+- **Charts**: lightweight-charts v5.1 (TradingView)
+- **Animation**: CSS transitions + keyframes (replaced Framer Motion for CPU savings)
 - **Icons**: Lucide React
 - **Testing**: Vitest + React Testing Library
 - **Containerization**: Docker + Docker Compose
@@ -35,7 +35,8 @@ src/
 │   └── layout.tsx         # Root layout with ClerkProvider
 ├── components/
 │   ├── ui/               # shadcn/ui components
-│   ├── landing/          # Landing page components
+│   ├── landing/          # Old landing components (deprecated, unused)
+│   ├── landing-page.tsx  # New static landing page (amber/honey theme)
 │   ├── dashboard/        # Dashboard panels (news, screener, impact)
 │   ├── portfolios/       # Portfolio UI components
 │   └── stocks/           # Stock chart components
@@ -90,20 +91,18 @@ docker compose -f docker-compose.dev.yml logs db
 docker compose -f docker-compose.dev.yml exec app npm run db:push -- --force
 ```
 
-### 4. Intelligence API (Mock)
-The mock Intelligence API runs as a separate container (`hivemind_mock`) and must be network-connected:
+### 4. Intelligence API
+The Intelligence API runs as a separate Docker Compose stack (container: `intelligence_api`). It creates and owns the `intelligence_network` that HiveMind joins as an external network.
 ```bash
-# Verify the intelligence network and container exist
-docker network inspect intelligence-network
-docker ps | findstr hivemind_mock
+# Start Intelligence API FIRST (it creates the shared network)
+cd ../intelligence-api && docker compose up -d --build && cd ../hivemind_app
 
-# If not running, create network and connect:
-docker network create intelligence-network
-docker network connect --alias intelligence-api intelligence-network hivemind_mock
-docker network connect intelligence-network hivemind-app
+# Verify it's running
+curl http://localhost:8001/api/health
+docker network ls | grep intelligence
 
 # Test connectivity from app container
-docker compose -f docker-compose.dev.yml exec app node -e "const h=require('http');h.get('http://intelligence-api:8001/api/health',r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>console.log(d))})"
+docker compose -f docker-compose.dev.yml exec app node -e "const h=require('http');h.get('http://intelligence_api:8001/api/health',r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>console.log(d))})"
 ```
 
 ### Services Architecture
@@ -117,17 +116,18 @@ docker compose -f docker-compose.dev.yml exec app node -e "const h=require('http
 │  - WATCHPACK_POLLING    │  - Volume: postgres_data          │
 └─────────┬───────────────┴───────────────────────────────────┘
           │
-          ├──── intelligence-network ────┐
+          ├──── intelligence_network ────┐
           │                              │
           ▼                              ▼
-┌─────────────────────┐    ┌──────────────────────────────┐
-│  External Services  │    │  hivemind_mock (Intelligence) │
-├─────────────────────┤    │  - Port 8001                  │
-│  Clerk (auth)       │    │  - Alias: intelligence-api    │
-│  Stripe (payments)  │    │  - API Key: X-API-Key header  │
-│  Yahoo Finance API  │    │  - 27 tickers, 18 endpoints   │
-└─────────────────────┘    │  - Docs: MOCK_API_DOCS.md     │
-                           └──────────────────────────────┘
+┌─────────────────────┐    ┌───────────────────────────────┐
+│  External Services  │    │  intelligence_api (separate    │
+├─────────────────────┤    │  Docker Compose stack)         │
+│  Clerk (auth)       │    │  - Port 8001                   │
+│  Stripe (payments)  │    │  - Container: intelligence_api │
+│  Yahoo Finance API  │    │  - API Key: X-API-Key header   │
+└─────────────────────┘    │  - 27 tickers, 18 endpoints    │
+                           │  - Docs: MOCK_API_DOCS.md      │
+                           └───────────────────────────────┘
 ```
 
 ---
@@ -159,7 +159,7 @@ STRIPE_WEBHOOK_SECRET=whsec_xxx
 STRIPE_PRICE_ID_PRO=price_xxx
 
 # Intelligence API
-INTELLIGENCE_API_URL=http://intelligence-api:8001
+INTELLIGENCE_API_URL=http://intelligence_api:8001
 INTELLIGENCE_API_KEY=hm-dev-key-change-in-prod
 NEXT_PUBLIC_INTELLIGENCE_ENABLED=true
 ```
@@ -334,7 +334,7 @@ For E2E auth tests, a test user is configured:
 - [x] **Phase 3**: Clerk authentication (middleware, webhooks, protected routes)
 - [x] **Phase 4**: Stripe subscriptions (checkout, portal, webhooks, pricing page)
 - [x] **Phase 5**: Testing infrastructure (Vitest 156 tests, Playwright E2E)
-- [x] **Phase 6**: Landing page & marketing UI (hero, features, pricing, footer)
+- [x] **Phase 6**: Landing page (replaced with static amber/honey theme — Canvas animations, interactive demos)
 - [x] **Phase 7**: Portfolio management (CRUD API, holdings, S&P 500 validation, UI)
 - [x] **Stock Data**: Yahoo Finance integration, 12-year history, TradingView charts
 
@@ -342,7 +342,7 @@ For E2E auth tests, a test user is configured:
 - [x] **Dashboard Phase 2**: Dashboard layout with sidebar navigation
 - [x] **Dashboard Phase 3**: Today's Summary component
 - [x] **Dashboard Phase 4**: Critical News Feed, Sector News, Stock News panels
-- [x] **Dashboard Phase 5**: Stock Screener with dual comparison charts (recharts)
+- [x] **Dashboard Phase 5**: Stock Screener with dual comparison charts (lightweight-charts v5)
 - [x] **Dashboard Phase 6**: Impact Analysis Panel with radar chart
 - [x] **Portfolio Manager**: Full CRUD synced with existing API
 - [x] **Dark Theme**: All protected pages updated to glassmorphism styling
@@ -357,6 +357,13 @@ For E2E auth tests, a test user is configured:
 - [x] **Intelligence Phase 6**: Stock pages (real articles, chart markers, mock deprecation)
 - [x] **27-Ticker Expansion**: All stock lists updated to match Intelligence API watchlist
 - [x] **E2E Test Suite**: `test-intelligence-e2e.mjs` — 156 tests covering all data flows
+
+### Completed (Performance & UI Polish)
+- [x] **CPU Optimization**: Idle CPU 42% → 7% by replacing Framer Motion animation loops with CSS transitions/keyframes
+- [x] **useMemo**: Added to IntelligenceDataProvider context value and expensive panel computations (prevented re-render cascades)
+- [x] **CSS Keyframes**: Replaced infinite `motion` background animation with pure CSS `@keyframes`
+- [x] **Sidebar Overlay**: Converted sidebar from fixed-width layout push to hover-triggered overlay (full-width dashboard content, glass blur overlay on hover)
+- [x] **Screener Rewrite**: Replaced Recharts stock screener with lightweight-charts v5 dual-series comparison (faster rendering, lower memory)
 
 ## Code Conventions
 
@@ -388,7 +395,7 @@ For E2E auth tests, a test user is configured:
 ### Services
 - **app**: Next.js dev server (port 3000)
 - **db**: PostgreSQL 16 Alpine (port 5433 external, 5432 internal)
-- **hivemind_mock**: Intelligence API (port 8001, on `intelligence-network` with alias `intelligence-api`)
+- **intelligence_api**: Intelligence API (port 8001, separate Docker Compose stack on shared `intelligence_network`)
 
 ### Volumes
 - `postgres_data`: Database persistence
@@ -428,10 +435,10 @@ docker compose -f docker-compose.dev.yml logs db
 - Check volume mounts in docker-compose
 
 **Intelligence API connection refused (ECONNREFUSED)**
-- Port is 8001, NOT 8000 — check `INTELLIGENCE_API_URL=http://intelligence-api:8001`
-- Verify `hivemind_mock` container is running: `docker ps | findstr hivemind_mock`
-- Verify both containers share `intelligence-network`: `docker network inspect intelligence-network`
-- Re-connect if needed: `docker network connect --alias intelligence-api intelligence-network hivemind_mock`
+- Port is 8001, NOT 8000 — check `INTELLIGENCE_API_URL=http://intelligence_api:8001`
+- Verify `intelligence_api` container is running: `docker ps | findstr intelligence_api`
+- Verify both containers share `intelligence_network`: `docker network inspect intelligence_network`
+- Intelligence API must start first — it creates the `intelligence_network` that HiveMind joins
 
 **Hydration mismatch on dates**
 - Docker container runs UTC, browser runs local timezone

@@ -38,7 +38,7 @@ services:
       # App
       - NEXT_PUBLIC_APP_URL=http://localhost:3000
       # Intelligence API
-      - INTELLIGENCE_API_URL=${INTELLIGENCE_API_URL:-http://intelligence-api:8001}
+      - INTELLIGENCE_API_URL=${INTELLIGENCE_API_URL:-http://intelligence_api:8001}
       - INTELLIGENCE_API_KEY=${INTELLIGENCE_API_KEY:-hm-dev-key-change-in-prod}
       - NEXT_PUBLIC_INTELLIGENCE_ENABLED=${NEXT_PUBLIC_INTELLIGENCE_ENABLED:-false}
     depends_on:
@@ -46,7 +46,7 @@ services:
         condition: service_healthy
     networks:
       - hivemind-network
-      - intelligence-network
+      - intelligence_net
 
   db:
     image: postgres:16-alpine
@@ -71,9 +71,9 @@ services:
 networks:
   hivemind-network:
     driver: bridge
-  intelligence-network:
+  intelligence_net:
     external: true
-    name: intelligence-network
+    name: intelligence_network
 
 volumes:
   postgres_data:

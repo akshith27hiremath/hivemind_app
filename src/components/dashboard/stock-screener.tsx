@@ -66,6 +66,34 @@ interface ChartNewsItem {
   stock?: string;
 }
 
+type NewsRange = "1D" | "1W" | "1M" | "3M" | "ALL";
+
+const NEWS_RANGE_DAYS: Record<NewsRange, number | null> = {
+  "1D": 1, "1W": 7, "1M": 30, "3M": 90, "ALL": null,
+};
+
+const NEWS_RANGE_ORDER: NewsRange[] = ["1D", "1W", "1M", "3M", "ALL"];
+
+interface TickerArticleCache {
+  articles: Article[];
+  totalOnServer: number;
+  nextOffset: number;
+  fullyLoaded: boolean;
+  deepestRangeLoaded: NewsRange;
+}
+
+function isWiderRange(a: NewsRange, b: NewsRange): boolean {
+  return NEWS_RANGE_ORDER.indexOf(a) > NEWS_RANGE_ORDER.indexOf(b);
+}
+
+function getCutoffDate(range: NewsRange): string | null {
+  const days = NEWS_RANGE_DAYS[range];
+  if (days === null) return null;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  return cutoff.toISOString().split("T")[0]!;
+}
+
 // ============================================
 // Stock list — all 27 supported tickers
 // ============================================
@@ -201,16 +229,23 @@ export function StockScreener() {
   const [stockData, setStockData] = useState<Record<string, PriceData[]>>({});
   const [loadingChart, setLoadingChart] = useState(false);
 
-  // News
-  const [stockArticles, setStockArticles] = useState<Article[]>([]);
+  // News — per-ticker article cache with smart pagination
+  const [tickerCache, setTickerCache] = useState<Record<string, TickerArticleCache>>({});
+  const [articlesLoading, setArticlesLoading] = useState(false);
+  const [loadProgress, setLoadProgress] = useState<string | null>(null);
   const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
-  const [newsRange, setNewsRange] = useState<"1D" | "1W" | "1M" | "3M" | "ALL">("1W");
+  const [newsRange, setNewsRange] = useState<NewsRange>("1W");
+  const [newsSortA, setNewsSortA] = useState<"newest" | "oldest" | "impact">("newest");
+  const [newsSortB, setNewsSortB] = useState<"newest" | "oldest" | "impact">("newest");
 
   // Refs
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const timeframeRef = useRef<HTMLDivElement>(null);
   const stockRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
+  const tickerCacheRef = useRef(tickerCache);
+  tickerCacheRef.current = tickerCache;
+  const abortRef = useRef<AbortController | null>(null);
 
   // ---- Fetch historical data for both stocks ----
   useEffect(() => {
@@ -238,28 +273,122 @@ export function StockScreener() {
     return () => { cancelled = true; };
   }, [selectedStocks]);
 
-  // ---- Fetch articles for selected stocks ----
-  const fetchStockArticles = useCallback(async () => {
-    const tickers = selectedStocks.filter(Boolean);
-    if (tickers.length === 0) return;
-    const results: Article[] = [];
-    for (const ticker of tickers) {
-      try {
-        const res = await fetch(`/api/intelligence/articles?ticker=${ticker}&limit=30`);
-        if (res.ok) {
+  // ---- Fetch articles with smart pagination per ticker ----
+  const fetchArticlesForRange = useCallback(async (
+    range: NewsRange,
+    tickers: string[],
+  ) => {
+    const currentCache = tickerCacheRef.current;
+    const cutoffDate = getCutoffDate(range);
+
+    const tickersNeedingFetch = tickers.filter((ticker) => {
+      const cached = currentCache[ticker];
+      if (!cached) return true;
+      if (cached.fullyLoaded) return false;
+      if (range === "ALL") return !cached.fullyLoaded;
+      return isWiderRange(range, cached.deepestRangeLoaded);
+    });
+
+    if (tickersNeedingFetch.length === 0) return;
+
+    // Cancel any in-flight fetches
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const { signal } = controller;
+
+    setArticlesLoading(true);
+
+    for (const ticker of tickersNeedingFetch) {
+      if (signal.aborted) break;
+
+      const existing = currentCache[ticker];
+      let offset = existing?.nextOffset ?? 0;
+      let allArticles = [...(existing?.articles ?? [])];
+      let totalOnServer = existing?.totalOnServer ?? 0;
+      let fullyLoaded = existing?.fullyLoaded ?? false;
+      let reachedCutoff = false;
+
+      // Paginate until we cover the requested range
+      while (!reachedCutoff && !fullyLoaded) {
+        if (signal.aborted) break;
+
+        try {
+          const res = await fetch(
+            `/api/intelligence/articles?ticker=${ticker}&limit=100&offset=${offset}`,
+            { signal },
+          );
+          if (!res.ok) break;
           const data = await res.json();
-          results.push(...(data.data ?? []));
+          const page: Article[] = data.data ?? [];
+          totalOnServer = data.meta?.total ?? totalOnServer;
+
+          if (page.length === 0) {
+            fullyLoaded = true;
+            break;
+          }
+
+          // Show progress for large fetches
+          if (totalOnServer > 100 && offset === 0) {
+            setLoadProgress(`Loading ${totalOnServer} articles for ${ticker}...`);
+          }
+
+          allArticles.push(...page);
+          offset += page.length;
+
+          if (page.length < 100 || offset >= totalOnServer) {
+            fullyLoaded = true;
+          }
+
+          // Check if oldest article in this page is past our cutoff
+          if (cutoffDate && page.length > 0) {
+            const oldest = page[page.length - 1]!;
+            const oldestDate = oldest.published_at?.split("T")[0] ?? "";
+            if (oldestDate < cutoffDate) {
+              reachedCutoff = true;
+            }
+          }
+
+          // Progressive update after each page
+          if (!signal.aborted) {
+            setTickerCache((prev) => ({
+              ...prev,
+              [ticker]: {
+                articles: allArticles,
+                totalOnServer,
+                nextOffset: offset,
+                fullyLoaded,
+                deepestRangeLoaded: fullyLoaded ? "ALL" : range,
+              },
+            }));
+          }
+        } catch (err) {
+          // AbortError is expected when cancelling, ignore it
+          if (err instanceof DOMException && err.name === "AbortError") break;
+          break;
         }
-      } catch {
-        // Non-critical
       }
     }
-    setStockArticles(results);
-  }, [selectedStocks]);
 
+    if (!signal.aborted) {
+      setArticlesLoading(false);
+      setLoadProgress(null);
+    }
+  }, []);
+
+  // Trigger fetch on stock change
   useEffect(() => {
-    fetchStockArticles();
-  }, [fetchStockArticles]);
+    const tickers = selectedStocks.filter(Boolean);
+    if (tickers.length === 0) return;
+    fetchArticlesForRange(newsRange, tickers);
+  }, [selectedStocks, fetchArticlesForRange]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Trigger fetch on range change (fetch deeper if needed)
+  useEffect(() => {
+    const tickers = selectedStocks.filter(Boolean);
+    if (tickers.length === 0) return;
+    fetchArticlesForRange(newsRange, tickers);
+  }, [newsRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Close dropdowns on outside click ----
   useEffect(() => {
@@ -282,12 +411,21 @@ export function StockScreener() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isStockDropdownOpen]);
 
-  // ---- Build news items ----
+  // ---- Build news items from per-ticker cache ----
   const digestNews = dashboard?.data?.digest?.sections?.direct_news ?? [];
+
+  const allCachedArticles = useMemo(() => {
+    const result: Article[] = [];
+    for (const ticker of selectedStocks.filter(Boolean)) {
+      const cached = tickerCache[ticker];
+      if (cached) result.push(...cached.articles);
+    }
+    return result;
+  }, [tickerCache, selectedStocks]);
 
   const uniqueNews = useMemo(() => {
     const allChartNews: ChartNewsItem[] = [
-      ...stockArticles.map(mapArticleToChartNews),
+      ...allCachedArticles.map(mapArticleToChartNews),
       ...digestNews
         .filter((d) =>
           d.affected_holdings.some((h) => selectedStocks.includes(h))
@@ -315,11 +453,7 @@ export function StockScreener() {
       seenTitles.add(n.title);
       return true;
     });
-  }, [stockArticles, digestNews, selectedStocks]);
-
-  const NEWS_RANGE_DAYS: Record<typeof newsRange, number | null> = {
-    "1D": 1, "1W": 7, "1M": 30, "3M": 90, "ALL": null,
-  };
+  }, [allCachedArticles, digestNews, selectedStocks]);
 
   const filteredNews = useMemo(() => {
     const days = NEWS_RANGE_DAYS[newsRange];
@@ -510,10 +644,20 @@ export function StockScreener() {
   // ---- Handlers ----
   const handleStockSelect = (index: number, symbol: string) => {
     const newStocks = [...selectedStocks];
+    const oldSymbol = newStocks[index];
     newStocks[index] = symbol;
     setSelectedStocks(newStocks);
     setIsStockDropdownOpen(null);
     setSelectedNewsIds([]);
+
+    // Clear cache for deselected ticker
+    if (oldSymbol && !newStocks.includes(oldSymbol)) {
+      setTickerCache((prev) => {
+        const next = { ...prev };
+        delete next[oldSymbol];
+        return next;
+      });
+    }
   };
 
   const handleToggleNews = (id: string) => {
@@ -521,6 +665,17 @@ export function StockScreener() {
       prev.includes(id) ? prev.filter((newsId) => newsId !== id) : [...prev, id]
     );
   };
+
+  // ---- Sort news ----
+  const IMPACT_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+  function sortNews(items: ChartNewsItem[], sort: "newest" | "oldest" | "impact"): ChartNewsItem[] {
+    return [...items].sort((a, b) => {
+      if (sort === "newest") return b.time.localeCompare(a.time);
+      if (sort === "oldest") return a.time.localeCompare(b.time);
+      return (IMPACT_ORDER[a.impact] ?? 2) - (IMPACT_ORDER[b.impact] ?? 2);
+    });
+  }
 
   // ---- Performance metrics ----
   const perfMetrics = useMemo(() => {
@@ -713,9 +868,17 @@ export function StockScreener() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-medium mb-1">News Events</h3>
-            <p className="text-sm text-gray-400">
-              Toggle news events to display as markers on the chart
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-gray-400">
+                Toggle news events to display as markers on the chart
+              </p>
+              {articlesLoading && (
+                <span className="flex items-center gap-1.5 text-xs text-amber-400/80">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {loadProgress ?? "Loading..."}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex items-center rounded-xl bg-white/5 border border-white/10 p-0.5">
             {(["1D", "1W", "1M", "3M", "ALL"] as const).map((range) => (
@@ -735,21 +898,46 @@ export function StockScreener() {
         </div>
 
         <div className="grid grid-cols-2 gap-6">
-          {selectedStocks.map((stockSymbol) => {
-            const stockNews = filteredNews.filter(
-              (n) => n.stock === stockSymbol || n.stock === undefined
+          {selectedStocks.map((stockSymbol, colIdx) => {
+            const sort = colIdx === 0 ? newsSortA : newsSortB;
+            const setSort = colIdx === 0 ? setNewsSortA : setNewsSortB;
+            const stockNews = sortNews(
+              filteredNews.filter(
+                (n) => n.stock === stockSymbol || n.stock === undefined
+              ),
+              sort
             );
 
             return (
               <div key={stockSymbol} className="min-w-0">
-                <div className="flex items-center gap-2 mb-3">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: getStockColor(stockSymbol) }}
-                  />
-                  <span className="text-xs text-gray-500 uppercase tracking-wider">
-                    {stockSymbol} News ({stockNews.length})
-                  </span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: getStockColor(stockSymbol) }}
+                    />
+                    <span className="text-xs text-gray-500 uppercase tracking-wider">
+                      {stockSymbol} News ({stockNews.length}
+                      {tickerCache[stockSymbol]?.totalOnServer
+                        ? ` of ${tickerCache[stockSymbol]!.totalOnServer} total`
+                        : ""})
+                    </span>
+                  </div>
+                  <div className="flex items-center rounded-lg bg-white/5 border border-white/10 p-0.5">
+                    {(["newest", "oldest", "impact"] as const).map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => setSort(opt)}
+                        className={`px-2 py-1 rounded-md text-[10px] font-medium transition-colors ${
+                          sort === opt
+                            ? "bg-white/10 text-white"
+                            : "text-gray-500 hover:text-white/70"
+                        }`}
+                      >
+                        {opt === "newest" ? "New" : opt === "oldest" ? "Old" : "Impact"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   {stockNews.length === 0 ? (

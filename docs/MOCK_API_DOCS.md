@@ -116,7 +116,7 @@ The mock service is defined in `docker-compose.yml` as `mock-intelligence`:
 docker-compose up -d mock-intelligence
 ```
 
-Container name: `hivemind_mock`, port: `8001`, network: `hivemind_network`.
+Container name: `intelligence_api`, port: `8001`, network: `intelligence_network`.
 
 ### Connecting your frontend container
 
@@ -130,28 +130,28 @@ services:
     ports:
       - "3000:3000"
     environment:
-      HIVEMIND_API_URL: http://hivemind_mock:8001
+      HIVEMIND_API_URL: http://intelligence_api:8001
       HIVEMIND_API_KEY: hm-dev-key-change-in-prod
     networks:
-      - hivemind_network
+      - intelligence_network
 
 networks:
-  hivemind_network:
+  intelligence_network:
     external: true
-    name: hivemind_network
+    name: intelligence_network
 ```
 
 ### Option B: Shared network manually
 
 ```bash
-docker network create hivemind_network
+docker network create intelligence_network
 
-docker run -d --name hivemind_mock --network hivemind_network \
+docker run -d --name intelligence_api --network intelligence_network \
   -p 8001:8001 -v mock_data:/app/data hivemind-mock:latest
 
-docker run -d --name my_frontend --network hivemind_network \
+docker run -d --name my_frontend --network intelligence_network \
   -p 3000:3000 \
-  -e HIVEMIND_API_URL=http://hivemind_mock:8001 \
+  -e HIVEMIND_API_URL=http://intelligence_api:8001 \
   -e HIVEMIND_API_KEY=hm-dev-key-change-in-prod \
   your-frontend-image
 ```
@@ -164,10 +164,10 @@ If your frontend runs directly on the host (e.g. `npm run dev`), use `http://loc
 
 | Caller | Base URL |
 |--------|----------|
-| Another Docker container on `hivemind_network` | `http://hivemind_mock:8001` |
+| Another Docker container on `intelligence_network` | `http://intelligence_api:8001` |
 | Browser (client-side JS) | `http://localhost:8001` |
 | Host machine (server-side) | `http://localhost:8001` |
-| Frontend SSR / API routes (in Docker) | `http://hivemind_mock:8001` |
+| Frontend SSR / API routes (in Docker) | `http://intelligence_api:8001` |
 
 ---
 
@@ -1254,7 +1254,7 @@ Frontend consumes via REST
 
 **Steady state**: ~2-4 new articles every 5 minutes, growing ~50-100/day.
 
-**Reset**: Delete the Docker volume (`docker volume rm hivemind_mock_data`) and restart. Fresh backfill.
+**Reset**: Delete the Docker volume (`docker volume rm intelligence_api_data`) and restart. Fresh backfill.
 
 ---
 

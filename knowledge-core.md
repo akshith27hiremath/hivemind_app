@@ -53,15 +53,16 @@ const id = params.id as string;
 const { id } = await params;
 ```
 
-### Intelligence API (Mock Service)
+### Intelligence API (Separate Docker Compose Stack)
 ```
-Container: hivemind_mock (port 8001)
-Network: intelligence-network (external Docker network)
-Alias: intelligence-api (used by app container to resolve hostname)
+Container: intelligence_api (port 8001)
+Network: intelligence_network (created by Intelligence API, joined by HiveMind as external)
+Hostname: intelligence_api (container name used for inter-container DNS)
 API Key: hm-dev-key-change-in-prod (X-API-Key header)
 Config: src/lib/intelligence/config.ts
 Client: src/lib/intelligence/client.ts (server-only, 10s timeout)
-Docs: MOCK_API_DOCS.md (18 endpoints, full reference)
+Docs: docs/MOCK_API_DOCS.md (18 endpoints, full reference)
+Startup: Intelligence API must start first — it creates the shared network
 ```
 
 **BFF Proxy Pattern** (Frontend never calls Intelligence API directly):
