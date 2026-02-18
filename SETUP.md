@@ -199,9 +199,27 @@ This value is stable across sessions -- you only need to copy it once.
 
 ---
 
-## Step 7: Configure Clerk webhooks
+## Step 7: Sync your Clerk user to the local database
 
-Clerk webhooks sync user data (create/update/delete) to the local database. Since you're sharing a Clerk account, you need a public URL that tunnels to your local machine.
+Clerk authentication (sign-in/sign-up UI) works with just the env vars -- no webhooks needed. But your local PostgreSQL `users` table starts empty, so you need to sync your user once.
+
+### Option A: Dev sync endpoint (recommended for existing users)
+
+This is the fastest approach. No ngrok, no webhook setup.
+
+1. Open http://localhost:3000 and **sign in** with your Clerk account
+2. Open the **browser dev console** (F12 → Console) and run:
+   ```js
+   fetch('/api/dev/sync-user', { method: 'POST' }).then(r => r.json()).then(console.log)
+   ```
+3. You should see `{ message: "User synced successfully", user: { ... } }`
+4. Done -- dashboard and all protected routes now work
+
+This only needs to be done **once per fresh database**. The user row persists in the `postgres_data` Docker volume.
+
+### Option B: Clerk webhooks (only needed for auto-syncing new signups)
+
+Only set this up if you need automatic user sync on new signups, profile updates, or deletions.
 
 1. Expose localhost:3000 via ngrok or Cloudflare Tunnel:
    ```bash
@@ -217,6 +235,15 @@ Clerk webhooks sync user data (create/update/delete) to the local database. Sinc
    ```
 
 > **Shared account note:** If both devs have webhook endpoints configured, Clerk sends events to all of them. This is fine -- each dev's local DB gets the same user sync.
+
+### When do you need what?
+
+| Scenario | Needs webhook/ngrok? |
+|----------|---------------------|
+| Sign in with existing Clerk user | No -- just env vars |
+| Get user into local DB (fresh machine) | No -- use `/api/dev/sync-user` |
+| Auto-sync new user signups to DB | Yes |
+| Auto-sync profile updates/deletions | Yes |
 
 ---
 
