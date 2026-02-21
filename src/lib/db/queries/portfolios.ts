@@ -73,10 +73,13 @@ export function getStockBySymbol(symbol: string) {
  */
 export async function getPortfoliosByUserId(
   userId: string
-): Promise<Portfolio[]> {
+): Promise<(Portfolio & { holdings: Holding[] })[]> {
   const result = await db.query.portfolios.findMany({
     where: eq(portfolios.userId, userId),
     orderBy: (portfolios, { desc }) => [desc(portfolios.createdAt)],
+    with: {
+      holdings: true,
+    },
   });
   return result;
 }
