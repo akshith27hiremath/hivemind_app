@@ -66,23 +66,22 @@ docker compose -f docker-compose.dev.yml up -d
 docker compose -f docker-compose.dev.yml ps
 ```
 
-### 2. Start Webhook Listeners (separate terminals)
+### 2. Sync Clerk User to Local DB
 
-**Clerk Webhooks** (user sync):
-```bash
-# Using ngrok or Clerk CLI for local development
-# Webhook endpoint: /api/webhooks/clerk
-# Events: user.created, user.updated, user.deleted
-```
+Clerk auth works with just env vars. On a fresh database, sync your user once:
+1. Sign in at http://localhost:3000
+2. Browser console: `fetch('/api/dev/sync-user', { method: 'POST' }).then(r => r.json()).then(console.log)`
 
-**Stripe Webhooks** (subscription events):
+For auto-sync of new signups, set up Clerk webhooks (see SETUP.md Step 7).
+
+### 3. Start Stripe Webhook Listener (separate terminal)
+
 ```bash
 stripe listen --forward-to localhost:3000/api/webhooks/stripe
 # Copy the webhook signing secret to STRIPE_WEBHOOK_SECRET in .env.local
-# Events: checkout.session.completed, customer.subscription.*
 ```
 
-### 3. Verify Database
+### 4. Verify Database
 ```bash
 # Check postgres is healthy
 docker compose -f docker-compose.dev.yml logs db
@@ -91,18 +90,11 @@ docker compose -f docker-compose.dev.yml logs db
 docker compose -f docker-compose.dev.yml exec app npm run db:push -- --force
 ```
 
-### 4. Intelligence API
-The Intelligence API runs as a separate Docker Compose stack (container: `intelligence_api`). It creates and owns the `intelligence_network` that HiveMind joins as an external network.
+### 5. Intelligence API
+Start the Intelligence API **before** HiveMind (it creates the shared `intelligence_network`):
 ```bash
-# Start Intelligence API FIRST (it creates the shared network)
 cd ../intelligence-api && docker compose up -d --build && cd ../hivemind_app
-
-# Verify it's running
 curl http://localhost:8001/api/health
-docker network ls | grep intelligence
-
-# Test connectivity from app container
-docker compose -f docker-compose.dev.yml exec app node -e "const h=require('http');h.get('http://intelligence_api:8001/api/health',r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>console.log(d))})"
 ```
 
 ### Services Architecture
@@ -326,44 +318,9 @@ For E2E auth tests, a test user is configured:
 | `/api/webhooks/clerk` | POST | Clerk user sync webhook |
 | `/api/webhooks/stripe` | POST | Stripe subscription webhook |
 
-## Implementation Progress
+## Implementation Status
 
-### Completed Phases (Core)
-- [x] **Phase 1**: Project initialization (Next.js, TypeScript, Tailwind, shadcn/ui)
-- [x] **Phase 2**: Database schema (Drizzle ORM, PostgreSQL, 7 tables)
-- [x] **Phase 3**: Clerk authentication (middleware, webhooks, protected routes)
-- [x] **Phase 4**: Stripe subscriptions (checkout, portal, webhooks, pricing page)
-- [x] **Phase 5**: Testing infrastructure (Vitest 156 tests, Playwright E2E)
-- [x] **Phase 6**: Landing page (replaced with static amber/honey theme — Canvas animations, interactive demos)
-- [x] **Phase 7**: Portfolio management (CRUD API, holdings, S&P 500 validation, UI)
-- [x] **Stock Data**: Yahoo Finance integration, 12-year history, TradingView charts
-
-### Completed Phases (Figma Dashboard - Dark Glassmorphism Theme)
-- [x] **Dashboard Phase 2**: Dashboard layout with sidebar navigation
-- [x] **Dashboard Phase 3**: Today's Summary component
-- [x] **Dashboard Phase 4**: Critical News Feed, Sector News, Stock News panels
-- [x] **Dashboard Phase 5**: Stock Screener with dual comparison charts (lightweight-charts v5)
-- [x] **Dashboard Phase 6**: Impact Analysis Panel with radar chart
-- [x] **Portfolio Manager**: Full CRUD synced with existing API
-- [x] **Dark Theme**: All protected pages updated to glassmorphism styling
-- [x] **News Markers**: lightweight-charts v5 createSeriesMarkers on stock charts
-
-### Completed Phases (Intelligence API Integration)
-- [x] **Intelligence Phase 1**: Foundation (types, client, config, mappers)
-- [x] **Intelligence Phase 2**: BFF proxy routes + IntelligenceDataProvider context
-- [x] **Intelligence Phase 3**: Summary panel migration (live digest data)
-- [x] **Intelligence Phase 4**: News panel migration (Critical, Sector, Stock → real articles)
-- [x] **Intelligence Phase 5**: Impact Analysis redesign (Signal Radar, Heatmap, Timeline)
-- [x] **Intelligence Phase 6**: Stock pages (real articles, chart markers, mock deprecation)
-- [x] **27-Ticker Expansion**: All stock lists updated to match Intelligence API watchlist
-- [x] **E2E Test Suite**: `test-intelligence-e2e.mjs` — 156 tests covering all data flows
-
-### Completed (Performance & UI Polish)
-- [x] **CPU Optimization**: Idle CPU 42% → 7% by replacing Framer Motion animation loops with CSS transitions/keyframes
-- [x] **useMemo**: Added to IntelligenceDataProvider context value and expensive panel computations (prevented re-render cascades)
-- [x] **CSS Keyframes**: Replaced infinite `motion` background animation with pure CSS `@keyframes`
-- [x] **Sidebar Overlay**: Converted sidebar from fixed-width layout push to hover-triggered overlay (full-width dashboard content, glass blur overlay on hover)
-- [x] **Screener Rewrite**: Replaced Recharts stock screener with lightweight-charts v5 dual-series comparison (faster rendering, lower memory)
+All planned phases are complete: core infrastructure (auth, payments, DB), dashboard UI (dark glassmorphism theme, 6 panels), Intelligence API integration (BFF proxy, data provider, 27 tickers), and performance optimization (CSS animations, useMemo, lightweight-charts v5). See git history for details.
 
 ## Code Conventions
 
@@ -460,13 +417,8 @@ test(scope): description
 ```
 
 ### Current Branch
-`feature/intelligence-api-integration` (includes all core phases + dashboard UI + Intelligence API)
+`main`
 
 ## Knowledge Core
 
-Accumulated learnings and patterns are stored in `knowledge-core.md`:
-- API version patterns (Yahoo Finance v3, lightweight-charts v5, Intelligence API)
-- Database patterns (Drizzle upserts, incremental sync)
-- UI patterns (TradingView-style controls, glassmorphism)
-- Intelligence API patterns (BFF proxy, data provider, 27 tickers)
-- Troubleshooting archive (Docker, Clerk, hydration, Intelligence API)
+API version gotchas and patterns are stored in `knowledge-core.md`. Consult before working with Yahoo Finance, lightweight-charts, or Intelligence API.
