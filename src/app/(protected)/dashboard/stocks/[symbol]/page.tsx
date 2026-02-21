@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { StockChart, type ChartNewsEvent } from "@/components/stocks/stock-chart";
-import { ChevronLeft, TrendingUp, TrendingDown, ExternalLink, AlertTriangle, Clock } from "lucide-react";
+import { ChevronLeft, TrendingUp, TrendingDown, AlertTriangle, Clock } from "lucide-react";
+import { ArticleHeadline } from "@/components/ui/article-headline";
 
 interface PriceData {
   time: string;
@@ -350,22 +351,22 @@ export default function StockDetailPage() {
         <div className="divide-y divide-white/5">
           {news.length > 0 ? (
             news.map((item, index) => (
-              <motion.a
+              <motion.div
                 key={index}
-                href={item.url !== "#" ? item.url : undefined}
-                target={item.url !== "#" ? "_blank" : undefined}
-                rel={item.url !== "#" ? "noopener noreferrer" : undefined}
-                className="block px-6 py-4 hover:bg-white/5 transition-colors group"
+                className="block px-6 py-4 hover:bg-white/5 transition-colors"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 + index * 0.05 }}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-white mb-1 line-clamp-2 group-hover:text-emerald-400 transition-colors">
+                    <ArticleHeadline
+                      url={item.url !== "#" ? item.url : undefined}
+                      className="font-medium text-white mb-1 line-clamp-2"
+                    >
                       {item.title}
-                    </h3>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                    </ArticleHeadline>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
                       <span className="font-medium text-gray-400">{item.source}</span>
                       <span>-</span>
                       <div className="flex items-center gap-1">
@@ -374,11 +375,8 @@ export default function StockDetailPage() {
                       </div>
                     </div>
                   </div>
-                  {item.url !== "#" && (
-                    <ExternalLink className="w-5 h-5 text-gray-600 group-hover:text-gray-400 shrink-0 transition-colors" />
-                  )}
                 </div>
-              </motion.a>
+              </motion.div>
             ))
           ) : (
             <div className="px-6 py-8 text-center text-gray-400">

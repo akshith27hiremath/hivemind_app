@@ -89,7 +89,7 @@ export function Sidebar({ visible, onNavClick }: { visible: boolean; onNavClick?
         <div className="flex gap-2 mt-3 pt-3 border-t border-white/10">
           <button
             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-xs text-gray-400 hover:text-white"
-            onClick={() => window.location.href = "/settings"}
+            onClick={() => router.push("/dashboard/settings")}
           >
             <Settings className="w-3.5 h-3.5" />
             Settings

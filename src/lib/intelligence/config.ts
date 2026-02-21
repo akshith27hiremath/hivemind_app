@@ -23,3 +23,6 @@ export const STALE_THRESHOLD = 600_000; // 10 min
 
 // Request timeout (milliseconds)
 export const REQUEST_TIMEOUT = 10_000; // 10s
+
+// Article headline clickability — opens source URL in new tab
+export const ARTICLE_LINKS_ENABLED = true;

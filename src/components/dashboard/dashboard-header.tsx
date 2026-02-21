@@ -6,6 +6,7 @@ import { useDashboard, type PanelType } from "./dashboard-context";
 import { PortfolioSelector } from "./portfolio-selector";
 import { useIntelligenceData } from "./intelligence-data-provider";
 import { useMemo, useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 const panelTitles: Record<PanelType, string> = {
   summary: "Today's Intelligence Summary",
@@ -19,6 +20,7 @@ const panelTitles: Record<PanelType, string> = {
 export function DashboardHeader() {
   const { activePanel } = useDashboard();
   const { dashboard } = useIntelligenceData();
+  const pathname = usePathname();
 
   // Defer date to client-only to avoid server/client timezone hydration mismatch
   const [today, setToday] = useState("");
@@ -59,7 +61,11 @@ export function DashboardHeader() {
     >
       <div>
         <h1 className="text-2xl font-medium text-white mb-1">
-          {panelTitles[activePanel]}
+          {pathname === "/dashboard/settings"
+            ? "Settings"
+            : pathname?.startsWith("/dashboard/stocks/")
+              ? "Stock Detail"
+              : panelTitles[activePanel]}
         </h1>
         <p className="text-sm text-gray-400">{today}</p>
       </div>

@@ -19,6 +19,7 @@ import {
   mapSignalType,
 } from "@/lib/intelligence/mappers";
 import type { Sentiment, Impact, Article } from "@/lib/intelligence/types";
+import { ArticleHeadline } from "@/components/ui/article-headline";
 
 type SortOption = "time" | "impact" | "sentiment";
 type SentimentFilter = "all" | "positive" | "negative" | "neutral";
@@ -322,9 +323,12 @@ export function StockNewsPanel() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           {getSentimentIcon(item.sentiment)}
-                          <h4 className="font-medium text-white">
+                          <ArticleHeadline
+                            url={item.url}
+                            className="font-medium text-white"
+                          >
                             {item.title}
-                          </h4>
+                          </ArticleHeadline>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-gray-400">
                           <span>{item.source}</span>
@@ -336,16 +340,6 @@ export function StockNewsPanel() {
                         </div>
                       </div>
 
-                      {item.url && (
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 rounded-lg backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-110 active:scale-90 transition-all duration-200"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      )}
                     </div>
 
                     {/* Summary */}

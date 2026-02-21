@@ -25,6 +25,7 @@ import {
 import { useIntelligenceData } from "./intelligence-data-provider";
 import { StaleDataBadge } from "./stale-data-badge";
 import { mapSignalType, mapSentiment, mapMagnitude, toRelativeTime } from "@/lib/intelligence/mappers";
+import { ArticleHeadline } from "@/components/ui/article-headline";
 import type {
   SignalAggregationResponse,
   SignalTypeAggregate,
@@ -406,9 +407,12 @@ function SignalTimelineTab({
                         <div className="flex items-start gap-3">
                           {getSentimentIcon(item.sentiment)}
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium line-clamp-1">
+                            <ArticleHeadline
+                              articleId={item.id}
+                              className="text-sm font-medium line-clamp-1"
+                            >
                               {item.headline}
-                            </div>
+                            </ArticleHeadline>
                             <p className="text-xs text-gray-400 mt-1 line-clamp-2">
                               {item.summary}
                             </p>

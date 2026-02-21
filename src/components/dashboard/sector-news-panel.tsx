@@ -7,6 +7,7 @@ import { useIntelligenceData } from "./intelligence-data-provider";
 import { StaleDataBadge } from "./stale-data-badge";
 import { mapSentiment, mapMagnitude, toRelativeTime } from "@/lib/intelligence/mappers";
 import type { Sentiment, Impact, Article } from "@/lib/intelligence/types";
+import { ArticleHeadline } from "@/components/ui/article-headline";
 
 type SortOption = "time" | "impact" | "relevance";
 type SentimentFilter = "all" | "positive" | "negative" | "neutral";
@@ -308,17 +309,20 @@ export function SectorNewsPanel() {
               <h3 className="text-lg font-medium mb-4">{sector}</h3>
               <div className="space-y-4">
                 {news.map((item) => (
-                  <a
+                  <div
                     key={item.id}
-                    href={item.url || undefined}
-                    target={item.url ? "_blank" : undefined}
-                    rel={item.url ? "noopener noreferrer" : undefined}
-                    className="block p-6 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200 cursor-pointer"
+                    className="block p-6 rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200"
                   >
                       <div className="flex items-start justify-between gap-4 mb-3">
                         <div className="flex items-center gap-2">
                           {getSentimentIcon(item.sentiment)}
-                          <h4 className="text-white font-medium">{item.title}</h4>
+                          <ArticleHeadline
+                            url={item.url || undefined}
+                            articleId={!item.url ? item.id : undefined}
+                            className="text-white font-medium"
+                          >
+                            {item.title}
+                          </ArticleHeadline>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-400">
                           <Clock className="w-3 h-3" />
@@ -364,7 +368,7 @@ export function SectorNewsPanel() {
                           </div>
                         )}
                       </div>
-                  </a>
+                  </div>
                 ))}
               </div>
             </div>

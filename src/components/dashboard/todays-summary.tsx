@@ -5,6 +5,7 @@ import { useIntelligenceData } from "./intelligence-data-provider";
 import { StaleDataBadge } from "./stale-data-badge";
 import { mapSentiment } from "@/lib/intelligence/mappers";
 import type { Sentiment, DigestItem } from "@/lib/intelligence/types";
+import { ArticleHeadline } from "@/components/ui/article-headline";
 import { useMemo } from "react";
 
 function getImpactIcon(impact: Sentiment) {
@@ -36,6 +37,7 @@ interface StockGroup {
   reason: string;
   news: string;
   confidence: number;
+  topArticleId: number;
 }
 
 function groupByStock(items: DigestItem[]): StockGroup[] {
@@ -79,6 +81,7 @@ function groupByStock(items: DigestItem[]): StockGroup[] {
       reason: articles.map((a) => a.summary).join(" "),
       news: topArticle.headline,
       confidence: Math.round(avgRelevance * 100),
+      topArticleId: topArticle.article_id,
     };
   });
 }
@@ -154,7 +157,12 @@ export function TodaysSummary() {
                             {item.relevance}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-400">{item.news}</p>
+                        <ArticleHeadline
+                          articleId={item.topArticleId}
+                          className="text-sm text-gray-400"
+                        >
+                          {item.news}
+                        </ArticleHeadline>
                       </div>
                       <div className="text-right ml-4">
                         <div className="text-xs text-gray-500 mb-1">

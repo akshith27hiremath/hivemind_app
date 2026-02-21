@@ -10,6 +10,7 @@ import {
   toRelativeTime,
 } from "@/lib/intelligence/mappers";
 import type { Sentiment, Impact } from "@/lib/intelligence/types";
+import { ArticleHeadline } from "@/components/ui/article-headline";
 
 function getSentimentIcon(sentiment: Sentiment) {
   switch (sentiment) {
@@ -98,15 +99,18 @@ export function CriticalNews() {
             return (
               <div
                 key={item.article_id}
-                className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200 cursor-pointer"
+                className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       {getSentimentIcon(sentiment)}
-                      <h4 className="text-sm font-medium text-white">
+                      <ArticleHeadline
+                        articleId={item.article_id}
+                        className="text-sm font-medium text-white"
+                      >
                         {item.headline}
-                      </h4>
+                      </ArticleHeadline>
                     </div>
 
                     <div className="flex items-center gap-3">
